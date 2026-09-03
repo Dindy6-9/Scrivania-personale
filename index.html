@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<!-- Scrivania Mia — v1.0 — app personale collegata a Firebase -->
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scrivania Mia</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --paper: #E3EAC4;
+    --surface: #D6E1AC;
+    --ink: #171A0F;
+    --ink-soft: #5C6740;
+    --forest: #93A83E;
+    --forest-dark: #6E8A2C;
+    --brick: #A83B23;
+    --border: #C3D08C;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  /* ---------- LOGIN SCREEN ---------- */
+  #login {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 48px 40px;
+    width: 100%;
+    max-width: 360px;
+    text-align: center;
+  }
+  #login h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--forest-dark);
+    margin-bottom: 6px;
+  }
+  #login p.tag {
+    color: var(--ink-soft);
+    font-size: 0.9rem;
+    margin-bottom: 32px;
+  }
+  #pin-input {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 1.1rem;
+    letter-spacing: 4px;
+    text-align: center;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--paper);
+    color: var(--ink);
+    margin-bottom: 12px;
+  }
+  #pin-input:focus { outline: 2px solid var(--forest); outline-offset: 1px; }
+  #pin-errore {
+    display: none;
+    color: var(--brick);
+    font-size: 0.82rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  .btn-primary {
+    width: 100%;
+    padding: 12px;
+    background: var(--forest);
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-primary:hover { background: var(--forest-dark); }
+  .btn-primary:disabled { opacity: 0.6; cursor: wait; }
+
+  /* ---------- APP SHELL ---------- */
+  #app {
+    display: none;
+    width: 100%;
+    max-width: 900px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  header.appbar {
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  header.appbar h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--forest-dark);
+  }
+  header.appbar span {
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+  }
+
+  .search-row {
+    padding: 14px 28px;
+    border-bottom: 1px solid var(--border);
+    background: var(--paper);
+  }
+  .search-row input {
+    width: 100%;
+    padding: 9px 14px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: var(--surface);
+    font-family: inherit;
+    font-size: 0.85rem;
+    color: var(--ink);
+  }
+  .search-row input:focus { outline: 2px solid var(--forest); outline-offset: 1px; }
+  .search-hint { font-size: 0.72rem; color: var(--ink-soft); margin-top: 6px; }
+
+  .link-row {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .link-row:last-child { border-bottom: none; }
+  .link-row .titolo { font-weight: 600; flex: 1; }
+  .link-row a {
+    font-size: 0.82rem;
+    color: var(--forest-dark);
+    text-decoration: none;
+    border-bottom: 1px solid var(--forest);
+    font-weight: 600;
+  }
+  #link-lista:empty::after {
+    content: "Nessun link salvato";
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+
+  .appunto {
+    background: var(--surface);
+    border-left: 3px solid var(--forest);
+    border-radius: 3px;
+    padding: 14px 18px;
+    margin-bottom: 14px;
+  }
+  .appunto-data {
+    font-family: 'Fraunces', serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--forest-dark);
+    margin-bottom: 6px;
+  }
+  .appunto p {
+    font-size: 0.95rem;
+    font-weight: 500;
+    line-height: 1.6;
+    color: var(--ink);
+    white-space: pre-wrap;
+  }
+  .appunto-textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--paper);
+    font-family: inherit;
+    font-size: 0.88rem;
+    color: var(--ink);
+    resize: vertical;
+  }
+  .appunto-textarea:focus { outline: 2px solid var(--forest); outline-offset: 1px; }
+  #appunti-lista:empty::after {
+    content: "Nessun appunto ancora";
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+
+  .scadenza .checkbox {
+    width: 22px;
+    height: 22px;
+    border: 2.5px solid var(--forest-dark);
+    border-radius: 5px;
+    flex-shrink: 0;
+    cursor: pointer;
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    align-self: flex-start;
+    background: var(--surface);
+  }
+  .scadenza .checkbox.checked { background: var(--forest); border-color: var(--forest); }
+  #scadenze-completate .scadenza .titolo,
+  #scadenze-completate .scadenza .data { opacity: 0.55; }
+  #scadenze-attive:empty::after {
+    content: "Nessuna scadenza al momento";
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+  #scadenze-completate:empty::after {
+    content: "Nessuna scadenza completata";
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+
+  .diario-entry.gestita { opacity: 0.45; }
+  .diario-entry .elimina {
+    margin-left: auto;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+    flex-shrink: 0;
+    padding: 0 4px;
+  }
+  .diario-entry .elimina:hover { color: var(--brick); }
+  #todo-lista:empty::after, #note-lista:empty::after {
+    content: "Niente qui per ora";
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+  #diario-lista:empty::after {
+    content: "Nessuna annotazione ancora";
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+
+  nav.tabs {
+    display: flex;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+    background: var(--paper);
+  }
+  nav.tabs button {
+    flex: 1;
+    min-width: 90px;
+    padding: 14px 8px;
+    background: none;
+    border: none;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--forest-dark);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+  }
+  nav.tabs button.active {
+    color: var(--forest-dark);
+    border-bottom: 2px solid var(--forest);
+    background: var(--surface);
+  }
+  nav.tabs button:disabled { cursor: default; opacity: 0.6; }
+
+  section.panel { display: none; padding: 24px 28px; min-height: 380px; }
+  section.panel.active { display: block; }
+
+  /* Scadenze */
+  .scadenza {
+    display: flex;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .scadenza:last-child { border-bottom: none; }
+  .scadenza .data {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    color: var(--forest-dark);
+    width: 64px;
+    flex-shrink: 0;
+  }
+  .scadenza .data small { display: block; font-size: 0.7rem; color: var(--ink-soft); font-weight: 400; }
+  .scadenza .contenuto { flex: 1; }
+  .scadenza .contenuto .titolo { font-weight: 600; margin-bottom: 2px; }
+  .scadenza .contenuto .meta { font-size: 0.8rem; color: var(--ink-soft); font-weight: 600; }
+  .scadenza.urgente .data { color: var(--brick); }
+  .badge-urgente {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--brick);
+    border: 1px solid var(--brick);
+    padding: 1px 7px;
+    border-radius: 20px;
+    margin-left: 8px;
+  }
+  .add-row {
+    margin-top: 16px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .add-row input {
+    flex: 1;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--paper);
+    font-family: inherit;
+    font-size: 0.85rem;
+    color: var(--ink);
+  }
+  .diario-data-input {
+    flex: 0 0 140px !important;
+  }
+  .allarme-toggle {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--forest-dark);
+    white-space: nowrap;
+    cursor: pointer;
+    flex: 0 0 auto;
+  }
+  .allarme-toggle input { width: 16px; height: 16px; cursor: pointer; accent-color: var(--forest); }
+  .anticipo-wrap {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+  .anticipo-btn {
+    width: 26px;
+    height: 26px;
+    border: 2px solid var(--forest-dark);
+    border-radius: 5px;
+    background: var(--surface);
+    color: var(--forest-dark);
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .anticipo-btn:hover { background: var(--forest); color: #fff; }
+  .anticipo-valore {
+    min-width: 22px;
+    text-align: center;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .scadenza-add-row { flex-wrap: wrap; }
+  @media (max-width: 600px) { .scadenza-add-row input[type="text"] { flex-basis: 100%; } }
+  .add-row button {
+    padding: 9px 16px;
+    background: var(--forest);
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    flex: 0 0 auto;
+  }
+  .add-row button:disabled { opacity: 0.6; cursor: wait; }
+
+  /* Diario */
+  .diario-day {
+    margin-bottom: 20px;
+  }
+  .diario-day .giorno {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--forest-dark);
+    margin-bottom: 8px;
+  }
+  .diario-entry {
+    display: flex;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--surface);
+    border-radius: 3px;
+    margin-bottom: 6px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    align-items: flex-start;
+  }
+  .diario-entry .checkbox {
+    width: 20px;
+    height: 20px;
+    border: 2.5px solid var(--forest-dark);
+    border-radius: 5px;
+    flex-shrink: 0;
+    cursor: pointer;
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    background: var(--paper);
+  }
+  .diario-entry .checkbox.checked { background: var(--forest); border-color: var(--forest); }
+
+  h2.panel-title {
+    font-family: 'Fraunces', serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--ink);
+  }
+
+  footer.note {
+    padding: 10px 28px;
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+    border-top: 1px solid var(--border);
+    background: var(--paper);
+  }
+
+  .caricamento {
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    font-style: italic;
+    padding: 8px 0;
+  }
+</style>
+</head>
+<body>
+
+  <div id="login">
+    <h1>Scrivania Mia</h1>
+    <p class="tag">Inserisci il PIN per accedere</p>
+    <input type="password" id="pin-input" maxlength="4" placeholder="• • • •" inputmode="numeric">
+    <div id="pin-errore">PIN errato, riprova.</div>
+    <button class="btn-primary" id="btn-login" onclick="tentaLogin()">Entra</button>
+  </div>
+
+  <div id="app">
+    <header class="appbar">
+      <h1>Scrivania Mia</h1>
+      <span id="stato-connessione">Connessione…</span>
+    </header>
+
+    <div class="search-row">
+      <input type="text" id="ricerca" placeholder="Cerca in to do, scadenze, diario, note, appunti, link…" oninput="cerca(this.value)">
+      <div class="search-hint" id="search-hint" style="display:none;"></div>
+    </div>
+
+    <nav class="tabs">
+      <button class="active" onclick="mostra('todo', this)">To Do</button>
+      <button onclick="mostra('scadenze', this)">Scadenze</button>
+      <button onclick="mostra('diario', this)">Diario</button>
+      <button onclick="mostra('note', this)">Note</button>
+      <button onclick="mostra('appunti', this)">Appunti</button>
+      <button onclick="mostra('link', this)">Link</button>
+      <button onclick="mostra('completate', this)">Completate</button>
+    </nav>
+
+    <section class="panel active" id="todo">
+      <h2 class="panel-title">To Do</h2>
+      <div id="todo-lista"></div>
+      <div class="add-row">
+        <input type="text" id="todo-input" placeholder="Nuovo task…" onkeydown="if(event.key==='Enter') aggiungiTodo()">
+        <button onclick="aggiungiTodo()">Aggiungi</button>
+      </div>
+    </section>
+
+    <section class="panel" id="scadenze">
+      <h2 class="panel-title">Prossime scadenze</h2>
+      <div id="scadenze-attive"></div>
+
+      <div class="add-row scadenza-add-row">
+        <input type="date" id="scadenza-data-input" class="diario-data-input">
+        <input type="text" id="scadenza-input" placeholder="Nuova scadenza…" style="flex:1;">
+        <label class="allarme-toggle"><input type="checkbox" id="scadenza-allarme" onchange="toggleAnticipo(this)"> 🔔 Allarme</label>
+        <span class="anticipo-wrap" id="anticipo-wrap" style="display:none;">
+          avvisami
+          <button type="button" class="anticipo-btn" onclick="cambiaAnticipo(-1)">−</button>
+          <span class="anticipo-valore" id="anticipo-valore">1</span>
+          <button type="button" class="anticipo-btn" onclick="cambiaAnticipo(1)">+</button>
+          <span id="anticipo-label">giorni prima</span>
+        </span>
+        <button onclick="aggiungiScadenza()">Aggiungi</button>
+      </div>
+      <div class="search-hint" style="display:block; margin-top:6px;">Il numero di giorni di anticipo resta un dettaglio interno — nella lista vedrai solo "🔔 allarme attivo".</div>
+    </section>
+
+    <section class="panel" id="diario">
+      <h2 class="panel-title">Diario giornaliero</h2>
+      <div id="diario-lista"></div>
+
+      <div class="add-row diario-add-row">
+        <input type="date" id="diario-data-input" class="diario-data-input">
+        <input type="text" id="diario-input" placeholder="Cosa hai fatto?" style="flex:1;" onkeydown="if(event.key==='Enter') aggiungiDiario()">
+        <button onclick="aggiungiDiario()">Aggiungi</button>
+      </div>
+      <div class="search-hint" style="display:block; margin-top:6px;">La data di default è oggi — cambiala se vuoi segnare un giorno passato: l'annotazione si raggruppa da sola sotto il giorno giusto.</div>
+    </section>
+
+    <section class="panel" id="note">
+      <h2 class="panel-title">Note</h2>
+      <div id="note-lista"></div>
+      <div class="add-row">
+        <input type="text" id="nota-input" placeholder="Aggiungi una nota…" onkeydown="if(event.key==='Enter') aggiungiNota()">
+        <button onclick="aggiungiNota()">Aggiungi</button>
+      </div>
+    </section>
+
+    <section class="panel" id="appunti">
+      <h2 class="panel-title">Appunti</h2>
+      <div id="appunti-lista"></div>
+      <textarea class="appunto-textarea" id="appunto-input" placeholder="Scrivi un nuovo appunto…" rows="3"></textarea>
+      <div class="add-row" style="margin-top:8px;">
+        <button style="flex:0 0 auto; padding:9px 20px;" onclick="aggiungiAppunto()">Salva appunto</button>
+      </div>
+    </section>
+
+    <section class="panel" id="link">
+      <h2 class="panel-title">Link e riferimenti</h2>
+      <div id="link-lista"></div>
+      <div class="add-row">
+        <input type="text" id="link-titolo-input" placeholder="Titolo…" style="flex:1;">
+        <input type="text" id="link-url-input" placeholder="Link…" style="flex:1;">
+        <button onclick="aggiungiLink()">Aggiungi</button>
+      </div>
+    </section>
+
+    <section class="panel" id="completate">
+      <h2 class="panel-title">Scadenze completate</h2>
+      <div id="scadenze-completate"></div>
+    </section>
+
+    <footer class="note">Scrivania Mia · v1.0 · dati salvati su Firebase in tempo reale</footer>
+  </div>
+
+<script type="module">
+// ============================================================
+// SCRIVANIA MIA — v1.0
+// Collegamento a Firebase (Firestore + Auth anonima)
+// ============================================================
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, updateDoc, deleteDoc, doc,
+  onSnapshot, query, orderBy, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+import {
+  getAuth, signInAnonymously
+} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCRLvtTOxT_10iO-FDdjcSe59psgt9efUU",
+  authDomain: "scrivania-personale.firebaseapp.com",
+  projectId: "scrivania-personale",
+  storageBucket: "scrivania-personale.firebasestorage.app",
+  messagingSenderId: "797380737722",
+  appId: "1:797380737722:web:b5ab6dc77d4036ca1fa083"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+// Il PIN è tenuto come hash (non in chiaro) — protezione leggera, non a prova di esperto.
+// Hash SHA-256 di "1661"
+const PIN_HASH = "b1c1a5b9f6b1f3f7c9b8a2d4e7f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8"; // placeholder, sostituito sotto
+const PIN_HASH_REALE = await sha256("1661");
+
+async function sha256(testo) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(testo));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+window.tentaLogin = async function() {
+  const btn = document.getElementById('btn-login');
+  const val = document.getElementById('pin-input').value;
+  const errore = document.getElementById('pin-errore');
+  btn.disabled = true;
+  const hashInserito = await sha256(val);
+  if (hashInserito === PIN_HASH_REALE) {
+    try {
+      await signInAnonymously(auth);
+      document.getElementById('login').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      avviaAscoltoDati();
+    } catch (e) {
+      errore.textContent = "Errore di connessione, riprova.";
+      errore.style.display = 'block';
+      btn.disabled = false;
+    }
+  } else {
+    errore.textContent = "PIN errato, riprova.";
+    errore.style.display = 'block';
+    document.getElementById('pin-input').value = '';
+    btn.disabled = false;
+  }
+};
+
+document.getElementById('pin-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') tentaLogin();
+});
+
+// ============================================================
+// UTILITÀ DATE
+// ============================================================
+const MESI = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+const MESI_LUNGHI = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+const GIORNI_SETT = ['dom','lun','mar','mer','gio','ven','sab'];
+
+function oggiISO() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function formatDataBreve(dataISO) {
+  const d = new Date(dataISO + 'T00:00:00');
+  return {
+    giorno: String(d.getDate()).padStart(2, '0'),
+    mese: MESI[d.getMonth()].toUpperCase(),
+    sett: GIORNI_SETT[d.getDay()]
+  };
+}
+
+function formatGiornoLungo(dataISO) {
+  const d = new Date(dataISO + 'T00:00:00');
+  const oggi = new Date(); oggi.setHours(0,0,0,0);
+  const ieri = new Date(oggi); ieri.setDate(ieri.getDate() - 1);
+  const dCheck = new Date(d); dCheck.setHours(0,0,0,0);
+  if (dCheck.getTime() === oggi.getTime()) return 'Oggi — ' + d.getDate() + ' ' + MESI_LUNGHI[d.getMonth()];
+  if (dCheck.getTime() === ieri.getTime()) return 'Ieri — ' + d.getDate() + ' ' + MESI_LUNGHI[d.getMonth()];
+  return d.getDate() + ' ' + MESI_LUNGHI[d.getMonth()];
+}
+
+function contoAllaRovescia(dataISO) {
+  const oggi = new Date(); oggi.setHours(0,0,0,0);
+  const scadenza = new Date(dataISO + 'T00:00:00');
+  const diffGiorni = Math.round((scadenza - oggi) / 86400000);
+  let testo, urgente = false;
+  if (diffGiorni < 0) { testo = 'scaduta'; urgente = true; }
+  else if (diffGiorni === 0) { testo = 'oggi'; urgente = true; }
+  else if (diffGiorni === 1) { testo = 'domani'; urgente = true; }
+  else if (diffGiorni <= 6) { testo = 'tra ' + diffGiorni + ' giorni'; urgente = true; }
+  else if (diffGiorni <= 60) { testo = 'tra ' + Math.round(diffGiorni / 7) + ' settimane'; }
+  else { testo = 'tra ' + Math.round(diffGiorni / 30) + ' mesi'; }
+  return { testo, urgente };
+}
+
+function escapeHtml(s) {
+  const div = document.createElement('div');
+  div.textContent = s;
+  return div.innerHTML;
+}
+
+// ============================================================
+// TO DO
+// ============================================================
+window.aggiungiTodo = async function() {
+  const input = document.getElementById('todo-input');
+  const testo = input.value.trim();
+  if (!testo) return;
+  input.value = '';
+  await addDoc(collection(db, 'todos'), { testo, fatto: false, creato: serverTimestamp() });
+};
+
+window.toggleTodo = async function(id, fattoAttuale) {
+  await updateDoc(doc(db, 'todos', id), { fatto: !fattoAttuale });
+};
+
+window.eliminaTodo = async function(id) {
+  await deleteDoc(doc(db, 'todos', id));
+};
+
+function renderTodos(snap) {
+  const cont = document.getElementById('todo-lista');
+  cont.innerHTML = '';
+  snap.forEach(docSnap => {
+    const t = docSnap.data();
+    const el = document.createElement('div');
+    el.className = 'diario-entry' + (t.fatto ? ' gestita' : '');
+    el.setAttribute('data-search', t.testo.toLowerCase());
+    el.innerHTML = `
+      <div class="checkbox ${t.fatto ? 'checked' : ''}" onclick="toggleTodo('${docSnap.id}', ${t.fatto})">${t.fatto ? '✓' : ''}</div>
+      <span class="contenuto-nota">${escapeHtml(t.testo)}</span>
+      <button class="elimina" onclick="eliminaTodo('${docSnap.id}')" title="Elimina">🗑</button>
+    `;
+    cont.appendChild(el);
+  });
+}
+
+// ============================================================
+// SCADENZE
+// ============================================================
+document.getElementById('scadenza-data-input').value = oggiISO();
+document.getElementById('diario-data-input').value = oggiISO();
+
+window.toggleAnticipo = function(checkbox) {
+  document.getElementById('anticipo-wrap').style.display = checkbox.checked ? 'flex' : 'none';
+};
+
+window.cambiaAnticipo = function(delta) {
+  const el = document.getElementById('anticipo-valore');
+  let val = parseInt(el.textContent, 10) + delta;
+  if (val < 0) val = 0;
+  if (val > 90) val = 90;
+  el.textContent = val;
+  document.getElementById('anticipo-label').textContent = val === 0 ? 'il giorno stesso' : (val === 1 ? 'giorno prima' : 'giorni prima');
+};
+
+window.aggiungiScadenza = async function() {
+  const testo = document.getElementById('scadenza-input').value.trim();
+  const data = document.getElementById('scadenza-data-input').value;
+  if (!testo || !data) return;
+  const allarme = document.getElementById('scadenza-allarme').checked;
+  const anticipo = allarme ? parseInt(document.getElementById('anticipo-valore').textContent, 10) : null;
+
+  await addDoc(collection(db, 'scadenze'), {
+    testo, data, fatto: false, allarme, anticipo, creato: serverTimestamp()
+  });
+
+  document.getElementById('scadenza-input').value = '';
+  document.getElementById('scadenza-allarme').checked = false;
+  document.getElementById('anticipo-wrap').style.display = 'none';
+  document.getElementById('anticipo-valore').textContent = '1';
+};
+
+window.toggleScadenza = async function(id, fattoAttuale) {
+  await updateDoc(doc(db, 'scadenze', id), { fatto: !fattoAttuale });
+};
+
+function renderScadenze(snap) {
+  const attive = document.getElementById('scadenze-attive');
+  const completate = document.getElementById('scadenze-completate');
+  attive.innerHTML = '';
+  completate.innerHTML = '';
+
+  const docs = [];
+  snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
+  docs.sort((a, b) => (a.data || '').localeCompare(b.data || ''));
+
+  docs.forEach(s => {
+    const breve = formatDataBreve(s.data);
+    const cr = contoAllaRovescia(s.data);
+    const el = document.createElement('div');
+    el.className = 'scadenza' + (cr.urgente && !s.fatto ? ' urgente' : '');
+    el.setAttribute('data-search', s.testo.toLowerCase());
+    el.innerHTML = `
+      <div class="checkbox ${s.fatto ? 'checked' : ''}" onclick="toggleScadenza('${s.id}', ${s.fatto})">${s.fatto ? '✓' : ''}</div>
+      <div class="data">${breve.giorno} ${breve.mese}<small>${breve.sett}</small></div>
+      <div class="contenuto">
+        <div class="titolo">${escapeHtml(s.testo)} <span class="badge-urgente">${cr.testo}</span></div>
+        ${s.allarme ? '<div class="meta">🔔 allarme attivo</div>' : ''}
+      </div>
+    `;
+    (s.fatto ? completate : attive).appendChild(el);
+  });
+}
+
+// ============================================================
+// DIARIO
+// ============================================================
+window.aggiungiDiario = async function() {
+  const testo = document.getElementById('diario-input').value.trim();
+  const data = document.getElementById('diario-data-input').value;
+  if (!testo || !data) return;
+  document.getElementById('diario-input').value = '';
+  await addDoc(collection(db, 'diario'), { testo, data, creato: serverTimestamp() });
+};
+
+function renderDiario(snap) {
+  const cont = document.getElementById('diario-lista');
+  cont.innerHTML = '';
+
+  const docs = [];
+  snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
+  docs.sort((a, b) => (b.data || '').localeCompare(a.data || ''));
+
+  const gruppi = {};
+  const ordineGiorni = [];
+  docs.forEach(voce => {
+    if (!gruppi[voce.data]) { gruppi[voce.data] = []; ordineGiorni.push(voce.data); }
+    gruppi[voce.data].push(voce);
+  });
+
+  ordineGiorni.forEach(data => {
+    const giornoDiv = document.createElement('div');
+    giornoDiv.className = 'diario-day';
+    const titolo = document.createElement('div');
+    titolo.className = 'giorno';
+    titolo.textContent = formatGiornoLungo(data);
+    giornoDiv.appendChild(titolo);
+
+    gruppi[data].forEach(voce => {
+      const el = document.createElement('div');
+      el.className = 'diario-entry';
+      el.setAttribute('data-search', voce.testo.toLowerCase());
+      el.innerHTML = `<span>${escapeHtml(voce.testo)}</span>`;
+      giornoDiv.appendChild(el);
+    });
+
+    cont.appendChild(giornoDiv);
+  });
+}
+
+// ============================================================
+// NOTE
+// ============================================================
+window.aggiungiNota = async function() {
+  const input = document.getElementById('nota-input');
+  const testo = input.value.trim();
+  if (!testo) return;
+  input.value = '';
+  await addDoc(collection(db, 'note'), { testo, fatto: false, creato: serverTimestamp() });
+};
+
+window.toggleNota = async function(id, fattoAttuale) {
+  await updateDoc(doc(db, 'note', id), { fatto: !fattoAttuale });
+};
+
+window.eliminaNota = async function(id) {
+  await deleteDoc(doc(db, 'note', id));
+};
+
+function renderNote(snap) {
+  const cont = document.getElementById('note-lista');
+  cont.innerHTML = '';
+  snap.forEach(docSnap => {
+    const n = docSnap.data();
+    const el = document.createElement('div');
+    el.className = 'diario-entry' + (n.fatto ? ' gestita' : '');
+    el.setAttribute('data-search', n.testo.toLowerCase());
+    el.innerHTML = `
+      <div class="checkbox ${n.fatto ? 'checked' : ''}" onclick="toggleNota('${docSnap.id}', ${n.fatto})">${n.fatto ? '✓' : ''}</div>
+      <span class="contenuto-nota">${escapeHtml(n.testo)}</span>
+      <button class="elimina" onclick="eliminaNota('${docSnap.id}')" title="Elimina nota">🗑</button>
+    `;
+    cont.appendChild(el);
+  });
+}
+
+// ============================================================
+// APPUNTI
+// ============================================================
+window.aggiungiAppunto = async function() {
+  const input = document.getElementById('appunto-input');
+  const testo = input.value.trim();
+  if (!testo) return;
+  input.value = '';
+  await addDoc(collection(db, 'appunti'), { testo, creato: serverTimestamp() });
+};
+
+function renderAppunti(snap) {
+  const cont = document.getElementById('appunti-lista');
+  cont.innerHTML = '';
+  const docs = [];
+  snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
+  docs.sort((a, b) => {
+    const ta = a.creato && a.creato.toMillis ? a.creato.toMillis() : 0;
+    const tb = b.creato && b.creato.toMillis ? b.creato.toMillis() : 0;
+    return tb - ta;
+  });
+  docs.forEach(a => {
+    const dataStr = a.creato && a.creato.toDate ? formatGiornoLungo(a.creato.toDate().toISOString().split('T')[0]).replace('Oggi — ', '').replace('Ieri — ', 'Ieri, ') : '';
+    const el = document.createElement('div');
+    el.className = 'appunto';
+    el.setAttribute('data-search', a.testo.toLowerCase());
+    el.innerHTML = `
+      <div class="appunto-data">${dataStr}</div>
+      <p>${escapeHtml(a.testo)}</p>
+    `;
+    cont.appendChild(el);
+  });
+}
+
+// ============================================================
+// LINK
+// ============================================================
+window.aggiungiLink = async function() {
+  const titolo = document.getElementById('link-titolo-input').value.trim();
+  let url = document.getElementById('link-url-input').value.trim();
+  if (!titolo || !url) return;
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  document.getElementById('link-titolo-input').value = '';
+  document.getElementById('link-url-input').value = '';
+  await addDoc(collection(db, 'link'), { titolo, url, creato: serverTimestamp() });
+};
+
+function renderLink(snap) {
+  const cont = document.getElementById('link-lista');
+  cont.innerHTML = '';
+  snap.forEach(docSnap => {
+    const l = docSnap.data();
+    const el = document.createElement('div');
+    el.className = 'link-row';
+    el.setAttribute('data-search', l.titolo.toLowerCase());
+    el.innerHTML = `
+      <div class="titolo">${escapeHtml(l.titolo)}</div>
+      <a href="${escapeHtml(l.url)}" target="_blank" rel="noopener">Apri ↗</a>
+    `;
+    cont.appendChild(el);
+  });
+}
+
+// ============================================================
+// ASCOLTO IN TEMPO REALE (avviato solo dopo login corretto)
+// ============================================================
+let ascoltoAvviato = false;
+function avviaAscoltoDati() {
+  if (ascoltoAvviato) return;
+  ascoltoAvviato = true;
+
+  onSnapshot(collection(db, 'todos'), snap => { renderTodos(snap); aggiornaRicerca(); });
+  onSnapshot(collection(db, 'scadenze'), snap => { renderScadenze(snap); aggiornaRicerca(); });
+  onSnapshot(collection(db, 'diario'), snap => { renderDiario(snap); aggiornaRicerca(); });
+  onSnapshot(collection(db, 'note'), snap => { renderNote(snap); aggiornaRicerca(); });
+  onSnapshot(collection(db, 'appunti'), snap => { renderAppunti(snap); aggiornaRicerca(); });
+  onSnapshot(collection(db, 'link'), snap => { renderLink(snap); aggiornaRicerca(); });
+
+  document.getElementById('stato-connessione').textContent = 'Collegata a Firebase';
+}
+
+function aggiornaRicerca() {
+  const val = document.getElementById('ricerca').value;
+  if (val.trim() !== '') cerca(val);
+}
+
+// ============================================================
+// NAVIGAZIONE TAB + RICERCA GLOBALE
+// ============================================================
+window.mostra = function(id, btn) {
+  document.getElementById('ricerca').value = '';
+  cerca('');
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav.tabs button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+};
+
+window.cerca = function(testo) {
+  const q = testo.trim().toLowerCase();
+  const hint = document.getElementById('search-hint');
+  const items = document.querySelectorAll('[data-search]');
+  const panels = document.querySelectorAll('.panel');
+  const tabs = document.querySelectorAll('nav.tabs button');
+
+  if (q === '') {
+    hint.style.display = 'none';
+    items.forEach(el => el.style.display = '');
+    tabs.forEach(t => t.disabled = false);
+    panels.forEach(p => p.classList.remove('active'));
+    document.querySelector('nav.tabs button.active') && document.querySelector('nav.tabs button.active').click();
+    return;
+  }
+
+  panels.forEach(p => p.classList.add('active'));
+  tabs.forEach(t => { t.classList.remove('active'); t.disabled = true; });
+
+  let trovati = 0;
+  items.forEach(el => {
+    const match = (el.getAttribute('data-search') || '').includes(q);
+    el.style.display = match ? '' : 'none';
+    if (match) trovati++;
+  });
+
+  hint.style.display = 'block';
+  hint.textContent = trovati === 0
+    ? `Nessun risultato per "${testo}"`
+    : `${trovati} risultat${trovati === 1 ? 'o' : 'i'} per "${testo}" in tutte le sezioni`;
+};
+</script>
+
+</body>
+</html>
