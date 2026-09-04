@@ -232,6 +232,22 @@
   .scadenza .contenuto .titolo { font-weight: 500; font-size: 0.85rem; margin-bottom: 1px; }
   .scadenza .contenuto .meta { font-size: 0.78rem; color: var(--ink-soft); }
   .scadenza.urgente .data { color: var(--brick); border-color: var(--brick); }
+  .scadenza .checkbox {
+    width: 22px;
+    height: 22px;
+    border: 2.5px solid var(--forest-dark);
+    border-radius: 3px;
+    flex-shrink: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: var(--surface);
+  }
+  .scadenza .checkbox.checked { background: var(--forest); border-color: var(--forest); }
   .scadenza.settimana-corrente .data { color: var(--rosso-settimana); border-color: var(--rosso-settimana); }
   .badge-urgente { font-size: 0.66rem; color: var(--ink-soft); font-weight: 500; margin-left: 4px; }
   .badge-categoria {
