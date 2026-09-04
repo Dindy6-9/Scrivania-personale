@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Scrivania Mia — v1.0 — app personale collegata a Firebase -->
+<!-- Scrivania Mia — v2.0 — categorie, tag, editing inline, stampa/download -->
 <html lang="it">
 <head>
 <meta charset="UTF-8">
@@ -17,6 +17,7 @@
     --forest-dark: #6E8A2C;
     --brick: #A83B23;
     --border: #C3D08C;
+    --rosso-settimana: #B0524A;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -32,8 +33,7 @@
     padding: 24px;
   }
 
-  /* ---------- LOGIN SCREEN ---------- */
-  #login {
+  #login, #chi-sei {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 4px;
@@ -42,14 +42,14 @@
     max-width: 360px;
     text-align: center;
   }
-  #login h1 {
+  #login h1, #chi-sei h1 {
     font-family: 'Fraunces', serif;
     font-size: 1.5rem;
     font-weight: 600;
     color: var(--forest-dark);
     margin-bottom: 6px;
   }
-  #login p.tag {
+  #login p.tag, #chi-sei p.tag {
     color: var(--ink-soft);
     font-size: 0.9rem;
     margin-bottom: 32px;
@@ -85,11 +85,11 @@
     font-weight: 700;
     cursor: pointer;
     font-family: inherit;
+    margin-bottom: 10px;
   }
   .btn-primary:hover { background: var(--forest-dark); }
   .btn-primary:disabled { opacity: 0.6; cursor: wait; }
 
-  /* ---------- APP SHELL ---------- */
   #app {
     display: none;
     width: 100%;
@@ -112,21 +112,14 @@
     font-weight: 600;
     color: var(--forest-dark);
   }
-  header.appbar span {
-    font-size: 0.8rem;
-    color: var(--ink-soft);
-  }
+  header.appbar span { font-size: 0.8rem; color: var(--ink-soft); }
 
-  .search-row {
-    padding: 14px 28px;
-    border-bottom: 1px solid var(--border);
-    background: var(--paper);
-  }
+  .search-row { padding: 14px 28px; border-bottom: 1px solid var(--border); background: var(--paper); }
   .search-row input {
     width: 100%;
     padding: 9px 14px;
     border: 1px solid var(--border);
-    border-radius: 20px;
+    border-radius: 3px;
     background: var(--surface);
     font-family: inherit;
     font-size: 0.85rem;
@@ -134,22 +127,34 @@
   }
   .search-row input:focus { outline: 2px solid var(--forest); outline-offset: 1px; }
   .search-hint { font-size: 0.72rem; color: var(--ink-soft); margin-top: 6px; }
+  .azioni-export { display: flex; gap: 8px; margin-top: 8px; }
+  .btn-export {
+    padding: 6px 12px;
+    border: 1.5px solid var(--forest-dark);
+    border-radius: 3px;
+    background: var(--surface);
+    color: var(--forest-dark);
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-export:hover { background: var(--forest); color: #fff; }
 
   .link-row {
     display: flex;
-    gap: 14px;
+    gap: 8px;
     align-items: center;
-    padding: 12px 0;
+    padding: 3px 0;
     border-bottom: 1px solid var(--border);
   }
   .link-row:last-child { border-bottom: none; }
-  .link-row .titolo { font-weight: 600; flex: 1; }
+  .link-row .titolo { font-weight: 500; font-size: 0.8rem; flex: 1; }
   .link-row a {
-    font-size: 0.82rem;
-    color: var(--forest-dark);
+    font-size: 0.72rem;
+    color: var(--forest);
     text-decoration: none;
     border-bottom: 1px solid var(--forest);
-    font-weight: 600;
   }
   #link-lista:empty::after {
     content: "Nessun link salvato";
@@ -162,23 +167,11 @@
     background: var(--surface);
     border-left: 3px solid var(--forest);
     border-radius: 3px;
-    padding: 14px 18px;
-    margin-bottom: 14px;
+    padding: 8px 12px;
+    margin-bottom: 5px;
   }
-  .appunto-data {
-    font-family: 'Fraunces', serif;
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: var(--forest-dark);
-    margin-bottom: 6px;
-  }
-  .appunto p {
-    font-size: 0.95rem;
-    font-weight: 500;
-    line-height: 1.6;
-    color: var(--ink);
-    white-space: pre-wrap;
-  }
+  .appunto-data { font-family: 'Fraunces', serif; font-size: 0.72rem; font-weight: 600; color: var(--forest-dark); margin-bottom: 3px; }
+  .appunto p { font-size: 0.86rem; font-weight: 500; line-height: 1.45; color: var(--ink); white-space: pre-wrap; }
   .appunto-textarea {
     width: 100%;
     padding: 12px 14px;
@@ -198,39 +191,143 @@
     font-style: italic;
   }
 
-  .scadenza .checkbox {
-    width: 22px;
-    height: 22px;
-    border: 2.5px solid var(--forest-dark);
-    border-radius: 5px;
-    flex-shrink: 0;
-    cursor: pointer;
-    margin-top: 2px;
+  .scadenza {
     display: flex;
+    gap: 12px;
+    padding: 4px 0;
     align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-size: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .scadenza:last-child { border-bottom: none; }
+  .scadenza .data {
+    font-family: 'Inter', sans-serif;
     font-weight: 700;
-    align-self: flex-start;
-    background: var(--surface);
+    font-size: 0.74rem;
+    color: var(--forest-dark);
+    width: 66px;
+    flex-shrink: 0;
+    white-space: nowrap;
+    text-align: center;
+    border: 1.5px solid var(--forest-dark);
+    border-radius: 2px;
+    padding: 3px 0;
   }
-  .scadenza .checkbox.checked { background: var(--forest); border-color: var(--forest); }
-  #scadenze-completate .scadenza .titolo,
-  #scadenze-completate .scadenza .data { opacity: 0.55; }
-  #scadenze-attive:empty::after {
-    content: "Nessuna scadenza al momento";
-    font-size: 0.82rem;
-    color: var(--ink-soft);
-    font-style: italic;
+  .scadenza .data small { display: inline; font-size: 0.74rem; color: var(--ink-soft); font-weight: 700; margin-left: 4px; text-transform: lowercase; }
+  .scadenza .contenuto { flex: 1; }
+  .scadenza .contenuto .titolo { font-weight: 500; font-size: 0.85rem; margin-bottom: 1px; }
+  .scadenza .contenuto .meta { font-size: 0.78rem; color: var(--ink-soft); }
+  .scadenza.urgente .data { color: var(--brick); border-color: var(--brick); }
+  .scadenza.settimana-corrente .data { color: var(--rosso-settimana); border-color: var(--rosso-settimana); }
+  .badge-urgente { font-size: 0.66rem; color: var(--ink-soft); font-weight: 500; margin-left: 4px; }
+  .badge-categoria {
+    display: inline-block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--forest-dark);
+    background: var(--paper);
+    border: 1px solid var(--forest);
+    padding: 0px 7px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    white-space: nowrap;
   }
-  #scadenze-completate:empty::after {
-    content: "Nessuna scadenza completata";
+  #scadenze-attive:empty::after, #scadenze-completate:empty::after {
+    content: "Nessuna scadenza qui";
     font-size: 0.82rem;
     color: var(--ink-soft);
     font-style: italic;
   }
 
+  .filtri-categoria { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .filtro-chip {
+    padding: 4px 12px;
+    border: 1.5px solid var(--forest-dark);
+    border-radius: 3px;
+    background: var(--surface);
+    color: var(--forest-dark);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .filtro-chip.attivo { background: var(--forest); color: #fff; }
+  .categoria-select {
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--paper);
+    font-family: inherit;
+    font-size: 0.82rem;
+    color: var(--ink);
+    flex: 0 0 auto;
+  }
+
+  .tag-nota-inline {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--forest-dark);
+    background: var(--paper);
+    border: 1px solid var(--forest);
+    border-radius: 3px;
+    padding: 0px 6px;
+    margin-right: 4px;
+  }
+
+  [contenteditable="true"] { border-radius: 2px; padding: 0 2px; margin: 0 -2px; }
+  [contenteditable="true"]:hover { background: var(--paper); cursor: text; }
+  [contenteditable="true"]:focus { outline: 1.5px dashed var(--forest); background: var(--paper); }
+
+  .diario-entry .checkbox { flex-shrink: 0; }
+
+  nav.tabs { display: flex; flex-wrap: wrap; border-bottom: 1px solid var(--border); background: var(--paper); }
+  nav.tabs button {
+    flex: 1;
+    min-width: 80px;
+    padding: 12px 6px;
+    background: none;
+    border: none;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--forest-dark);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+  }
+  nav.tabs button.active { border-bottom: 2px solid var(--forest); background: var(--surface); }
+
+  section.panel { display: none; padding: 24px 28px; min-height: 380px; }
+  section.panel.active { display: block; }
+
+  .diario-day { margin-bottom: 7px; }
+  .diario-day .giorno { font-family: 'Fraunces', serif; font-weight: 600; font-size: 0.88rem; color: var(--forest-dark); margin-bottom: 3px; }
+  .diario-entry {
+    display: flex;
+    gap: 8px;
+    padding: 5px 9px;
+    background: var(--surface);
+    border-radius: 3px;
+    margin-bottom: 1px;
+    font-size: 0.86rem;
+    font-weight: 500;
+    align-items: flex-start;
+  }
+  .diario-entry .checkbox {
+    width: 20px;
+    height: 20px;
+    border: 2.5px solid var(--forest-dark);
+    border-radius: 3px;
+    cursor: pointer;
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    background: var(--paper);
+  }
+  .diario-entry .checkbox.checked { background: var(--forest); border-color: var(--forest); }
   .diario-entry.gestita { opacity: 0.45; }
   .diario-entry .elimina {
     margin-left: auto;
@@ -256,71 +353,7 @@
     font-style: italic;
   }
 
-  nav.tabs {
-    display: flex;
-    flex-wrap: wrap;
-    border-bottom: 1px solid var(--border);
-    background: var(--paper);
-  }
-  nav.tabs button {
-    flex: 1;
-    min-width: 90px;
-    padding: 14px 8px;
-    background: none;
-    border: none;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.92rem;
-    font-weight: 700;
-    color: var(--forest-dark);
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-  }
-  nav.tabs button.active {
-    color: var(--forest-dark);
-    border-bottom: 2px solid var(--forest);
-    background: var(--surface);
-  }
-  nav.tabs button:disabled { cursor: default; opacity: 0.6; }
-
-  section.panel { display: none; padding: 24px 28px; min-height: 380px; }
-  section.panel.active { display: block; }
-
-  /* Scadenze */
-  .scadenza {
-    display: flex;
-    gap: 16px;
-    padding: 14px 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .scadenza:last-child { border-bottom: none; }
-  .scadenza .data {
-    font-family: 'Fraunces', serif;
-    font-weight: 600;
-    color: var(--forest-dark);
-    width: 64px;
-    flex-shrink: 0;
-  }
-  .scadenza .data small { display: block; font-size: 0.7rem; color: var(--ink-soft); font-weight: 400; }
-  .scadenza .contenuto { flex: 1; }
-  .scadenza .contenuto .titolo { font-weight: 600; margin-bottom: 2px; }
-  .scadenza .contenuto .meta { font-size: 0.8rem; color: var(--ink-soft); font-weight: 600; }
-  .scadenza.urgente .data { color: var(--brick); }
-  .badge-urgente {
-    display: inline-block;
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: var(--brick);
-    border: 1px solid var(--brick);
-    padding: 1px 7px;
-    border-radius: 20px;
-    margin-left: 8px;
-  }
-  .add-row {
-    margin-top: 16px;
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
+  .add-row { margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .add-row input {
     flex: 1;
     padding: 9px 12px;
@@ -331,9 +364,9 @@
     font-size: 0.85rem;
     color: var(--ink);
   }
-  .diario-data-input {
-    flex: 0 0 140px !important;
-  }
+  .diario-data-input { flex: 0 0 140px !important; }
+  .nota-tag-field { flex: 0 0 220px !important; }
+  @media (max-width: 600px) { .nota-tag-field, .scadenza-add-row input[type="text"] { flex-basis: 100% !important; } }
   .allarme-toggle {
     display: flex;
     align-items: center;
@@ -346,41 +379,22 @@
     flex: 0 0 auto;
   }
   .allarme-toggle input { width: 16px; height: 16px; cursor: pointer; accent-color: var(--forest); }
-  .anticipo-wrap {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    font-size: 0.82rem;
-    font-weight: 500;
-    color: var(--ink-soft);
-    white-space: nowrap;
-  }
+  .anticipo-wrap { display: flex; align-items: center; gap: 7px; font-size: 0.82rem; font-weight: 500; color: var(--ink-soft); white-space: nowrap; }
   .anticipo-btn {
-    width: 26px;
-    height: 26px;
+    width: 26px; height: 26px;
     border: 2px solid var(--forest-dark);
-    border-radius: 5px;
+    border-radius: 3px;
     background: var(--surface);
     color: var(--forest-dark);
     font-size: 1rem;
     font-weight: 700;
     line-height: 1;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex; align-items: center; justify-content: center;
     padding: 0;
   }
   .anticipo-btn:hover { background: var(--forest); color: #fff; }
-  .anticipo-valore {
-    min-width: 22px;
-    text-align: center;
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: var(--ink);
-  }
-  .scadenza-add-row { flex-wrap: wrap; }
-  @media (max-width: 600px) { .scadenza-add-row input[type="text"] { flex-basis: 100%; } }
+  .anticipo-valore { min-width: 22px; text-align: center; font-size: 0.95rem; font-weight: 700; color: var(--ink); }
   .add-row button {
     padding: 9px 16px;
     background: var(--forest);
@@ -394,67 +408,17 @@
   }
   .add-row button:disabled { opacity: 0.6; cursor: wait; }
 
-  /* Diario */
-  .diario-day {
-    margin-bottom: 20px;
-  }
-  .diario-day .giorno {
-    font-family: 'Fraunces', serif;
-    font-weight: 600;
-    font-size: 0.95rem;
-    color: var(--forest-dark);
-    margin-bottom: 8px;
-  }
-  .diario-entry {
-    display: flex;
-    gap: 10px;
-    padding: 10px 12px;
-    background: var(--surface);
-    border-radius: 3px;
-    margin-bottom: 6px;
-    font-size: 0.95rem;
-    font-weight: 500;
-    align-items: flex-start;
-  }
-  .diario-entry .checkbox {
-    width: 20px;
-    height: 20px;
-    border: 2.5px solid var(--forest-dark);
-    border-radius: 5px;
-    flex-shrink: 0;
-    cursor: pointer;
-    margin-top: 1px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-size: 0.7rem;
-    font-weight: 700;
-    background: var(--paper);
-  }
-  .diario-entry .checkbox.checked { background: var(--forest); border-color: var(--forest); }
+  h2.panel-title { font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 600; margin-bottom: 16px; color: var(--ink); }
+  footer.note { padding: 10px 28px; font-size: 0.72rem; color: var(--ink-soft); border-top: 1px solid var(--border); background: var(--paper); }
 
-  h2.panel-title {
-    font-family: 'Fraunces', serif;
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin-bottom: 16px;
-    color: var(--ink);
-  }
-
-  footer.note {
-    padding: 10px 28px;
-    font-size: 0.72rem;
-    color: var(--ink-soft);
-    border-top: 1px solid var(--border);
-    background: var(--paper);
-  }
-
-  .caricamento {
-    font-size: 0.82rem;
-    color: var(--ink-soft);
-    font-style: italic;
-    padding: 8px 0;
+  @media print {
+    body { background: #fff; padding: 0; display: block; }
+    #login, #chi-sei { display: none !important; }
+    #app { max-width: 100%; border: none; }
+    header.appbar, .search-row, nav.tabs, footer.note, .add-row { display: none !important; }
+    section.panel { padding: 0; }
+    .checkbox { border-color: #000 !important; }
+    [contenteditable="true"]:hover, [contenteditable="true"]:focus { background: none !important; outline: none !important; }
   }
 </style>
 </head>
@@ -477,6 +441,10 @@
     <div class="search-row">
       <input type="text" id="ricerca" placeholder="Cerca in to do, scadenze, diario, note, appunti, link…" oninput="cerca(this.value)">
       <div class="search-hint" id="search-hint" style="display:none;"></div>
+      <div class="azioni-export">
+        <button class="btn-export" onclick="stampaVista()">🖨 Stampa</button>
+        <button class="btn-export" onclick="scaricaVista()">⬇ Scarica</button>
+      </div>
     </div>
 
     <nav class="tabs">
@@ -500,11 +468,19 @@
 
     <section class="panel" id="scadenze">
       <h2 class="panel-title">Prossime scadenze</h2>
+      <div class="filtri-categoria" id="filtri-scadenze"></div>
       <div id="scadenze-attive"></div>
 
       <div class="add-row scadenza-add-row">
         <input type="date" id="scadenza-data-input" class="diario-data-input">
         <input type="text" id="scadenza-input" placeholder="Nuova scadenza…" style="flex:1;">
+        <select id="scadenza-categoria" class="categoria-select" onchange="gestisciNuovaCategoria(this, 'scadenze')">
+          <option value="Bandi">Bandi</option>
+          <option value="Contabili">Contabili</option>
+          <option value="Admin">Admin</option>
+          <option value="Altro">Altro</option>
+          <option value="__nuova__">+ Nuova categoria…</option>
+        </select>
         <label class="allarme-toggle"><input type="checkbox" id="scadenza-allarme" onchange="toggleAnticipo(this)"> 🔔 Allarme</label>
         <span class="anticipo-wrap" id="anticipo-wrap" style="display:none;">
           avvisami
@@ -515,26 +491,24 @@
         </span>
         <button onclick="aggiungiScadenza()">Aggiungi</button>
       </div>
-      <div class="search-hint" style="display:block; margin-top:6px;">Il numero di giorni di anticipo resta un dettaglio interno — nella lista vedrai solo "🔔 allarme attivo".</div>
     </section>
 
     <section class="panel" id="diario">
       <h2 class="panel-title">Diario giornaliero</h2>
       <div id="diario-lista"></div>
-
       <div class="add-row diario-add-row">
         <input type="date" id="diario-data-input" class="diario-data-input">
         <input type="text" id="diario-input" placeholder="Cosa hai fatto?" style="flex:1;" onkeydown="if(event.key==='Enter') aggiungiDiario()">
         <button onclick="aggiungiDiario()">Aggiungi</button>
       </div>
-      <div class="search-hint" style="display:block; margin-top:6px;">La data di default è oggi — cambiala se vuoi segnare un giorno passato: l'annotazione si raggruppa da sola sotto il giorno giusto.</div>
     </section>
 
     <section class="panel" id="note">
       <h2 class="panel-title">Note</h2>
       <div id="note-lista"></div>
-      <div class="add-row">
-        <input type="text" id="nota-input" placeholder="Aggiungi una nota…" onkeydown="if(event.key==='Enter') aggiungiNota()">
+      <div class="add-row nota-add-row">
+        <input type="text" id="nota-tag-input" placeholder="Etichetta (es. Bando Cultura, Telefonare…)" class="nota-tag-field">
+        <input type="text" id="nota-input" placeholder="Testo della nota…" style="flex:1;" onkeydown="if(event.key==='Enter') aggiungiNota()">
         <button onclick="aggiungiNota()">Aggiungi</button>
       </div>
     </section>
@@ -550,10 +524,17 @@
 
     <section class="panel" id="link">
       <h2 class="panel-title">Link e riferimenti</h2>
+      <div class="filtri-categoria" id="filtri-link"></div>
       <div id="link-lista"></div>
       <div class="add-row">
         <input type="text" id="link-titolo-input" placeholder="Titolo…" style="flex:1;">
         <input type="text" id="link-url-input" placeholder="Link…" style="flex:1;">
+        <select id="link-categoria" class="categoria-select" onchange="gestisciNuovaCategoria(this, 'link')">
+          <option value="Generali">Generali</option>
+          <option value="Fornitori">Fornitori</option>
+          <option value="Altro">Altro</option>
+          <option value="__nuova__">+ Nuova categoria…</option>
+        </select>
         <button onclick="aggiungiLink()">Aggiungi</button>
       </div>
     </section>
@@ -563,22 +544,16 @@
       <div id="scadenze-completate"></div>
     </section>
 
-    <footer class="note">Scrivania Mia · v1.0 · dati salvati su Firebase in tempo reale</footer>
+    <footer class="note">Scrivania Mia · v2.0 · dati salvati su Firebase in tempo reale</footer>
   </div>
 
 <script type="module">
-// ============================================================
-// SCRIVANIA MIA — v1.0
-// Collegamento a Firebase (Firestore + Auth anonima)
-// ============================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
 import {
   getFirestore, collection, addDoc, updateDoc, deleteDoc, doc,
-  onSnapshot, query, orderBy, serverTimestamp
+  onSnapshot, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
-import {
-  getAuth, signInAnonymously
-} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCRLvtTOxT_10iO-FDdjcSe59psgt9efUU",
@@ -593,15 +568,11 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Il PIN è tenuto come hash (non in chiaro) — protezione leggera, non a prova di esperto.
-// Hash SHA-256 di "1661"
-const PIN_HASH = "b1c1a5b9f6b1f3f7c9b8a2d4e7f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8"; // placeholder, sostituito sotto
-const PIN_HASH_REALE = await sha256("1661");
-
 async function sha256(testo) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(testo));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
+const PIN_HASH_REALE = await sha256("1661");
 
 window.tentaLogin = async function() {
   const btn = document.getElementById('btn-login');
@@ -627,29 +598,20 @@ window.tentaLogin = async function() {
     btn.disabled = false;
   }
 };
-
-document.getElementById('pin-input').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') tentaLogin();
-});
+document.getElementById('pin-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') tentaLogin(); });
 
 // ============================================================
-// UTILITÀ DATE
+// UTILITÀ
 // ============================================================
 const MESI = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
 const MESI_LUNGHI = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
-const GIORNI_SETT = ['dom','lun','mar','mer','gio','ven','sab'];
+const GIORNI_SETT = ['do','lu','ma','me','gi','ve','sa'];
 
-function oggiISO() {
-  return new Date().toISOString().split('T')[0];
-}
+function oggiISO() { return new Date().toISOString().split('T')[0]; }
 
 function formatDataBreve(dataISO) {
   const d = new Date(dataISO + 'T00:00:00');
-  return {
-    giorno: String(d.getDate()).padStart(2, '0'),
-    mese: MESI[d.getMonth()].toUpperCase(),
-    sett: GIORNI_SETT[d.getDay()]
-  };
+  return { giorno: String(d.getDate()).padStart(2, '0'), mese: MESI[d.getMonth()].toUpperCase(), sett: GIORNI_SETT[d.getDay()] };
 }
 
 function formatGiornoLungo(dataISO) {
@@ -676,10 +638,31 @@ function contoAllaRovescia(dataISO) {
   return { testo, urgente };
 }
 
+function inSettimanaCorrente(dataISO) {
+  const oggi = new Date(); oggi.setHours(0,0,0,0);
+  const scadenza = new Date(dataISO + 'T00:00:00');
+  const giornoSett = oggi.getDay();
+  const offsetLunedi = giornoSett === 0 ? 6 : giornoSett - 1;
+  const lunedi = new Date(oggi); lunedi.setDate(oggi.getDate() - offsetLunedi);
+  const domenica = new Date(lunedi); domenica.setDate(lunedi.getDate() + 6);
+  return scadenza >= lunedi && scadenza <= domenica;
+}
+
 function escapeHtml(s) {
   const div = document.createElement('div');
   div.textContent = s;
   return div.innerHTML;
+}
+
+// Rende un elemento modificabile sul posto, salvando su Firestore al blur
+function abilitaModifica(el, coll, id, campo) {
+  el.setAttribute('contenteditable', 'true');
+  el.addEventListener('blur', async () => {
+    const nuovo = el.textContent.trim();
+    if (nuovo === '') { return; }
+    try { await updateDoc(doc(db, coll, id), { [campo]: nuovo }); } catch (e) { console.error(e); }
+  });
+  el.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } });
 }
 
 // ============================================================
@@ -692,14 +675,8 @@ window.aggiungiTodo = async function() {
   input.value = '';
   await addDoc(collection(db, 'todos'), { testo, fatto: false, creato: serverTimestamp() });
 };
-
-window.toggleTodo = async function(id, fattoAttuale) {
-  await updateDoc(doc(db, 'todos', id), { fatto: !fattoAttuale });
-};
-
-window.eliminaTodo = async function(id) {
-  await deleteDoc(doc(db, 'todos', id));
-};
+window.toggleTodo = async function(id, fattoAttuale) { await updateDoc(doc(db, 'todos', id), { fatto: !fattoAttuale }); };
+window.eliminaTodo = async function(id) { await deleteDoc(doc(db, 'todos', id)); };
 
 function renderTodos(snap) {
   const cont = document.getElementById('todo-lista');
@@ -714,20 +691,24 @@ function renderTodos(snap) {
       <span class="contenuto-nota">${escapeHtml(t.testo)}</span>
       <button class="elimina" onclick="eliminaTodo('${docSnap.id}')" title="Elimina">🗑</button>
     `;
+    const testoEl = el.querySelector('.contenuto-nota');
+    abilitaModifica(testoEl, 'todos', docSnap.id, 'testo');
     cont.appendChild(el);
   });
 }
 
 // ============================================================
-// SCADENZE
+// SCADENZE — con categorie e filtri
 // ============================================================
 document.getElementById('scadenza-data-input').value = oggiISO();
 document.getElementById('diario-data-input').value = oggiISO();
 
-window.toggleAnticipo = function(checkbox) {
-  document.getElementById('anticipo-wrap').style.display = checkbox.checked ? 'flex' : 'none';
-};
+const CATEGORIE_DEFAULT_SCADENZE = ['Bandi', 'Contabili', 'Admin', 'Altro'];
+const CATEGORIE_DEFAULT_LINK = ['Generali', 'Fornitori', 'Altro'];
+let filtroAttivoScadenze = null;
+let filtroAttivoLink = null;
 
+window.toggleAnticipo = function(checkbox) { document.getElementById('anticipo-wrap').style.display = checkbox.checked ? 'flex' : 'none'; };
 window.cambiaAnticipo = function(delta) {
   const el = document.getElementById('anticipo-valore');
   let val = parseInt(el.textContent, 10) + delta;
@@ -737,53 +718,126 @@ window.cambiaAnticipo = function(delta) {
   document.getElementById('anticipo-label').textContent = val === 0 ? 'il giorno stesso' : (val === 1 ? 'giorno prima' : 'giorni prima');
 };
 
+window.gestisciNuovaCategoria = function(select, tipo) {
+  if (select.value === '__nuova__') {
+    const nome = prompt('Nome della nuova categoria:');
+    if (nome && nome.trim() !== '') {
+      const opz = document.createElement('option');
+      opz.value = nome.trim(); opz.textContent = nome.trim();
+      select.insertBefore(opz, select.querySelector('option[value="__nuova__"]'));
+      select.value = nome.trim();
+    } else {
+      select.value = 'Altro';
+    }
+  }
+};
+
 window.aggiungiScadenza = async function() {
   const testo = document.getElementById('scadenza-input').value.trim();
   const data = document.getElementById('scadenza-data-input').value;
   if (!testo || !data) return;
+  const categoria = document.getElementById('scadenza-categoria').value;
   const allarme = document.getElementById('scadenza-allarme').checked;
   const anticipo = allarme ? parseInt(document.getElementById('anticipo-valore').textContent, 10) : null;
-
-  await addDoc(collection(db, 'scadenze'), {
-    testo, data, fatto: false, allarme, anticipo, creato: serverTimestamp()
-  });
-
+  await addDoc(collection(db, 'scadenze'), { testo, data, categoria, fatto: false, allarme, anticipo, creato: serverTimestamp() });
   document.getElementById('scadenza-input').value = '';
   document.getElementById('scadenza-allarme').checked = false;
   document.getElementById('anticipo-wrap').style.display = 'none';
   document.getElementById('anticipo-valore').textContent = '1';
 };
+window.toggleScadenza = async function(id, fattoAttuale) { await updateDoc(doc(db, 'scadenze', id), { fatto: !fattoAttuale }); };
 
-window.toggleScadenza = async function(id, fattoAttuale) {
-  await updateDoc(doc(db, 'scadenze', id), { fatto: !fattoAttuale });
+window.filtraCategoria = function(cat, tipo) {
+  if (tipo === 'scadenze') { filtroAttivoScadenze = cat; renderFiltriScadenze(ultimiDocsScadenze); applicaFiltroScadenze(); }
+  else { filtroAttivoLink = cat; renderFiltriLink(ultimiDocsLink); applicaFiltroLink(); }
 };
 
+function applicaFiltroScadenze() {
+  document.querySelectorAll('#scadenze-attive .scadenza').forEach(el => {
+    const cat = el.getAttribute('data-categoria');
+    el.style.display = (!filtroAttivoScadenze || cat === filtroAttivoScadenze) ? '' : 'none';
+  });
+}
+function applicaFiltroLink() {
+  document.querySelectorAll('#link-lista .link-row').forEach(el => {
+    const cat = el.getAttribute('data-categoria');
+    el.style.display = (!filtroAttivoLink || cat === filtroAttivoLink) ? '' : 'none';
+  });
+}
+
+function renderFiltriScadenze(docs) {
+  const wrap = document.getElementById('filtri-scadenze');
+  const categorieViste = new Set(CATEGORIE_DEFAULT_SCADENZE);
+  docs.forEach(d => { if (d.categoria) categorieViste.add(d.categoria); });
+  wrap.innerHTML = '';
+  const tuttiBtn = document.createElement('button');
+  tuttiBtn.className = 'filtro-chip' + (!filtroAttivoScadenze ? ' attivo' : '');
+  tuttiBtn.textContent = 'Tutte';
+  tuttiBtn.onclick = () => filtraCategoria(null, 'scadenze');
+  wrap.appendChild(tuttiBtn);
+  categorieViste.forEach(cat => {
+    const b = document.createElement('button');
+    b.className = 'filtro-chip' + (filtroAttivoScadenze === cat ? ' attivo' : '');
+    b.textContent = cat;
+    b.onclick = () => filtraCategoria(cat, 'scadenze');
+    wrap.appendChild(b);
+  });
+}
+function renderFiltriLink(docs) {
+  const wrap = document.getElementById('filtri-link');
+  const categorieViste = new Set(CATEGORIE_DEFAULT_LINK);
+  docs.forEach(d => { if (d.categoria) categorieViste.add(d.categoria); });
+  wrap.innerHTML = '';
+  const tuttiBtn = document.createElement('button');
+  tuttiBtn.className = 'filtro-chip' + (!filtroAttivoLink ? ' attivo' : '');
+  tuttiBtn.textContent = 'Tutte';
+  tuttiBtn.onclick = () => filtraCategoria(null, 'link');
+  wrap.appendChild(tuttiBtn);
+  categorieViste.forEach(cat => {
+    const b = document.createElement('button');
+    b.className = 'filtro-chip' + (filtroAttivoLink === cat ? ' attivo' : '');
+    b.textContent = cat;
+    b.onclick = () => filtraCategoria(cat, 'link');
+    wrap.appendChild(b);
+  });
+}
+
+let ultimiDocsScadenze = [];
 function renderScadenze(snap) {
   const attive = document.getElementById('scadenze-attive');
   const completate = document.getElementById('scadenze-completate');
-  attive.innerHTML = '';
-  completate.innerHTML = '';
+  attive.innerHTML = ''; completate.innerHTML = '';
 
   const docs = [];
   snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
   docs.sort((a, b) => (a.data || '').localeCompare(b.data || ''));
+  ultimiDocsScadenze = docs;
+  renderFiltriScadenze(docs);
 
   docs.forEach(s => {
     const breve = formatDataBreve(s.data);
     const cr = contoAllaRovescia(s.data);
+    const settCorr = inSettimanaCorrente(s.data);
     const el = document.createElement('div');
-    el.className = 'scadenza' + (cr.urgente && !s.fatto ? ' urgente' : '');
+    let classi = 'scadenza';
+    if (cr.urgente && !s.fatto) classi += ' urgente';
+    if (settCorr && !s.fatto) classi += ' settimana-corrente';
+    el.className = classi;
     el.setAttribute('data-search', s.testo.toLowerCase());
+    el.setAttribute('data-categoria', s.categoria || 'Altro');
     el.innerHTML = `
       <div class="checkbox ${s.fatto ? 'checked' : ''}" onclick="toggleScadenza('${s.id}', ${s.fatto})">${s.fatto ? '✓' : ''}</div>
       <div class="data">${breve.giorno} ${breve.mese}<small>${breve.sett}</small></div>
       <div class="contenuto">
-        <div class="titolo">${escapeHtml(s.testo)} <span class="badge-urgente">${cr.testo}</span></div>
+        <div class="titolo"><span class="titolo-testo">${escapeHtml(s.testo)}</span> <span class="badge-urgente">(${cr.testo})</span></div>
         ${s.allarme ? '<div class="meta">🔔 allarme attivo</div>' : ''}
       </div>
+      <span class="badge-categoria">${escapeHtml(s.categoria || 'Altro')}</span>
     `;
+    abilitaModifica(el.querySelector('.titolo-testo'), 'scadenze', s.id, 'testo');
     (s.fatto ? completate : attive).appendChild(el);
   });
+  applicaFiltroScadenze();
 }
 
 // ============================================================
@@ -800,17 +854,11 @@ window.aggiungiDiario = async function() {
 function renderDiario(snap) {
   const cont = document.getElementById('diario-lista');
   cont.innerHTML = '';
-
   const docs = [];
   snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
   docs.sort((a, b) => (b.data || '').localeCompare(a.data || ''));
-
-  const gruppi = {};
-  const ordineGiorni = [];
-  docs.forEach(voce => {
-    if (!gruppi[voce.data]) { gruppi[voce.data] = []; ordineGiorni.push(voce.data); }
-    gruppi[voce.data].push(voce);
-  });
+  const gruppi = {}; const ordineGiorni = [];
+  docs.forEach(v => { if (!gruppi[v.data]) { gruppi[v.data] = []; ordineGiorni.push(v.data); } gruppi[v.data].push(v); });
 
   ordineGiorni.forEach(data => {
     const giornoDiv = document.createElement('div');
@@ -819,37 +867,31 @@ function renderDiario(snap) {
     titolo.className = 'giorno';
     titolo.textContent = formatGiornoLungo(data);
     giornoDiv.appendChild(titolo);
-
-    gruppi[data].forEach(voce => {
+    gruppi[data].forEach(v => {
       const el = document.createElement('div');
       el.className = 'diario-entry';
-      el.setAttribute('data-search', voce.testo.toLowerCase());
-      el.innerHTML = `<span>${escapeHtml(voce.testo)}</span>`;
+      el.setAttribute('data-search', v.testo.toLowerCase());
+      el.innerHTML = `<span class="testo-diario">${escapeHtml(v.testo)}</span>`;
+      abilitaModifica(el.querySelector('.testo-diario'), 'diario', v.id, 'testo');
       giornoDiv.appendChild(el);
     });
-
     cont.appendChild(giornoDiv);
   });
 }
 
 // ============================================================
-// NOTE
+// NOTE — con tag
 // ============================================================
 window.aggiungiNota = async function() {
-  const input = document.getElementById('nota-input');
-  const testo = input.value.trim();
+  const tag = document.getElementById('nota-tag-input').value.trim();
+  const testo = document.getElementById('nota-input').value.trim();
   if (!testo) return;
-  input.value = '';
-  await addDoc(collection(db, 'note'), { testo, fatto: false, creato: serverTimestamp() });
+  document.getElementById('nota-tag-input').value = '';
+  document.getElementById('nota-input').value = '';
+  await addDoc(collection(db, 'note'), { tag, testo, fatto: false, creato: serverTimestamp() });
 };
-
-window.toggleNota = async function(id, fattoAttuale) {
-  await updateDoc(doc(db, 'note', id), { fatto: !fattoAttuale });
-};
-
-window.eliminaNota = async function(id) {
-  await deleteDoc(doc(db, 'note', id));
-};
+window.toggleNota = async function(id, fattoAttuale) { await updateDoc(doc(db, 'note', id), { fatto: !fattoAttuale }); };
+window.eliminaNota = async function(id) { await deleteDoc(doc(db, 'note', id)); };
 
 function renderNote(snap) {
   const cont = document.getElementById('note-lista');
@@ -858,12 +900,14 @@ function renderNote(snap) {
     const n = docSnap.data();
     const el = document.createElement('div');
     el.className = 'diario-entry' + (n.fatto ? ' gestita' : '');
-    el.setAttribute('data-search', n.testo.toLowerCase());
+    el.setAttribute('data-search', ((n.tag || '') + ' ' + n.testo).toLowerCase());
     el.innerHTML = `
       <div class="checkbox ${n.fatto ? 'checked' : ''}" onclick="toggleNota('${docSnap.id}', ${n.fatto})">${n.fatto ? '✓' : ''}</div>
-      <span class="contenuto-nota">${escapeHtml(n.testo)}</span>
+      <span class="contenuto-nota">${n.tag ? '<span class="tag-nota-inline tag-testo">' + escapeHtml(n.tag) + '</span> ' : '<span class="tag-nota-inline tag-testo" style="opacity:0.5;">+ tag</span> '}<span class="testo-nota">${escapeHtml(n.testo)}</span></span>
       <button class="elimina" onclick="eliminaNota('${docSnap.id}')" title="Elimina nota">🗑</button>
     `;
+    abilitaModifica(el.querySelector('.tag-testo'), 'note', docSnap.id, 'tag');
+    abilitaModifica(el.querySelector('.testo-nota'), 'note', docSnap.id, 'testo');
     cont.appendChild(el);
   });
 }
@@ -890,65 +934,96 @@ function renderAppunti(snap) {
     return tb - ta;
   });
   docs.forEach(a => {
-    const dataStr = a.creato && a.creato.toDate ? formatGiornoLungo(a.creato.toDate().toISOString().split('T')[0]).replace('Oggi — ', '').replace('Ieri — ', 'Ieri, ') : '';
+    const dataStr = a.creato && a.creato.toDate ? formatGiornoLungo(a.creato.toDate().toISOString().split('T')[0]) : '';
     const el = document.createElement('div');
     el.className = 'appunto';
     el.setAttribute('data-search', a.testo.toLowerCase());
-    el.innerHTML = `
-      <div class="appunto-data">${dataStr}</div>
-      <p>${escapeHtml(a.testo)}</p>
-    `;
+    el.innerHTML = `<div class="appunto-data">${dataStr}</div><p class="testo-appunto">${escapeHtml(a.testo)}</p>`;
+    abilitaModifica(el.querySelector('.testo-appunto'), 'appunti', a.id, 'testo');
     cont.appendChild(el);
   });
 }
 
 // ============================================================
-// LINK
+// LINK — con categorie
 // ============================================================
 window.aggiungiLink = async function() {
   const titolo = document.getElementById('link-titolo-input').value.trim();
   let url = document.getElementById('link-url-input').value.trim();
   if (!titolo || !url) return;
   if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  const categoria = document.getElementById('link-categoria').value;
   document.getElementById('link-titolo-input').value = '';
   document.getElementById('link-url-input').value = '';
-  await addDoc(collection(db, 'link'), { titolo, url, creato: serverTimestamp() });
+  await addDoc(collection(db, 'link'), { titolo, url, categoria, creato: serverTimestamp() });
 };
 
+let ultimiDocsLink = [];
 function renderLink(snap) {
   const cont = document.getElementById('link-lista');
   cont.innerHTML = '';
-  snap.forEach(docSnap => {
-    const l = docSnap.data();
+  const docs = [];
+  snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
+  ultimiDocsLink = docs;
+  renderFiltriLink(docs);
+
+  docs.forEach(l => {
     const el = document.createElement('div');
     el.className = 'link-row';
     el.setAttribute('data-search', l.titolo.toLowerCase());
+    el.setAttribute('data-categoria', l.categoria || 'Altro');
     el.innerHTML = `
-      <div class="titolo">${escapeHtml(l.titolo)}</div>
+      <div class="titolo titolo-link">${escapeHtml(l.titolo)}</div>
+      <span class="badge-categoria">${escapeHtml(l.categoria || 'Altro')}</span>
       <a href="${escapeHtml(l.url)}" target="_blank" rel="noopener">Apri ↗</a>
     `;
+    abilitaModifica(el.querySelector('.titolo-link'), 'link', l.id, 'titolo');
     cont.appendChild(el);
   });
+  applicaFiltroLink();
 }
 
 // ============================================================
-// ASCOLTO IN TEMPO REALE (avviato solo dopo login corretto)
+// STAMPA / DOWNLOAD
+// ============================================================
+window.stampaVista = function() { window.print(); };
+
+window.scaricaVista = function() {
+  const panelAttivo = document.querySelector('section.panel.active');
+  const nomeTab = document.querySelector('nav.tabs button.active').textContent.trim();
+  let testo = 'SCRIVANIA MIA — ' + nomeTab + '\n';
+  testo += 'Esportato il ' + new Date().toLocaleDateString('it-IT') + '\n';
+  testo += '='.repeat(40) + '\n\n';
+  const elementi = panelAttivo.querySelectorAll('[data-search]');
+  let trovati = false;
+  elementi.forEach(el => {
+    const visibile = el.offsetParent !== null && getComputedStyle(el).display !== 'none';
+    if (visibile) { trovati = true; testo += '- ' + el.textContent.replace(/\s+/g, ' ').trim() + '\n'; }
+  });
+  if (!trovati) testo += '(nessun elemento visibile da esportare)\n';
+  const blob = new Blob([testo], { type: 'text/plain;charset=utf-8' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'scrivania-mia-' + nomeTab.toLowerCase().replace(/\s+/g, '-') + '.txt';
+  link.click();
+  URL.revokeObjectURL(link.href);
+};
+
+// ============================================================
+// ASCOLTO IN TEMPO REALE
 // ============================================================
 let ascoltoAvviato = false;
 function avviaAscoltoDati() {
   if (ascoltoAvviato) return;
   ascoltoAvviato = true;
-
   onSnapshot(collection(db, 'todos'), snap => { renderTodos(snap); aggiornaRicerca(); });
   onSnapshot(collection(db, 'scadenze'), snap => { renderScadenze(snap); aggiornaRicerca(); });
   onSnapshot(collection(db, 'diario'), snap => { renderDiario(snap); aggiornaRicerca(); });
   onSnapshot(collection(db, 'note'), snap => { renderNote(snap); aggiornaRicerca(); });
   onSnapshot(collection(db, 'appunti'), snap => { renderAppunti(snap); aggiornaRicerca(); });
   onSnapshot(collection(db, 'link'), snap => { renderLink(snap); aggiornaRicerca(); });
-
   document.getElementById('stato-connessione').textContent = 'Collegata a Firebase';
 }
-
 function aggiornaRicerca() {
   const val = document.getElementById('ricerca').value;
   if (val.trim() !== '') cerca(val);
@@ -978,7 +1053,10 @@ window.cerca = function(testo) {
     items.forEach(el => el.style.display = '');
     tabs.forEach(t => t.disabled = false);
     panels.forEach(p => p.classList.remove('active'));
-    document.querySelector('nav.tabs button.active') && document.querySelector('nav.tabs button.active').click();
+    const attivaPrima = document.querySelector('nav.tabs button.active') || document.querySelector('nav.tabs button');
+    attivaPrima.click();
+    applicaFiltroScadenze();
+    applicaFiltroLink();
     return;
   }
 
@@ -993,9 +1071,7 @@ window.cerca = function(testo) {
   });
 
   hint.style.display = 'block';
-  hint.textContent = trovati === 0
-    ? `Nessun risultato per "${testo}"`
-    : `${trovati} risultat${trovati === 1 ? 'o' : 'i'} per "${testo}" in tutte le sezioni`;
+  hint.textContent = trovati === 0 ? `Nessun risultato per "${testo}"` : `${trovati} risultat${trovati === 1 ? 'o' : 'i'} per "${testo}" in tutte le sezioni`;
 };
 </script>
 
