@@ -1051,7 +1051,7 @@ window.cerca = function(testo) {
     hint.style.display = 'none';
     document.querySelectorAll('[data-search]').forEach(el => el.style.display = '');
     tabs.forEach(t => t.disabled = false);
-    panels.forEach(p => p.classList.remove('active'));
+    panels.forEach(p => { p.classList.remove('active'); p.style.minHeight = ''; });
     const attivaPrima = document.querySelector('nav.tabs button.active') || document.querySelector('nav.tabs button');
     attivaPrima.click();
     applicaFiltroScadenze();
@@ -1071,8 +1071,8 @@ window.cerca = function(testo) {
       if (match) trovatiInPanel++;
     });
     trovatiTotali += trovatiInPanel;
-    if (trovatiInPanel > 0) panel.classList.add('active');
-    else panel.classList.remove('active');
+    if (trovatiInPanel > 0) { panel.classList.add('active'); panel.style.minHeight = '0'; }
+    else { panel.classList.remove('active'); panel.style.minHeight = ''; }
   });
 
   hint.style.display = 'block';
