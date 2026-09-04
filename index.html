@@ -1044,13 +1044,12 @@ window.mostra = function(id, btn) {
 window.cerca = function(testo) {
   const q = testo.trim().toLowerCase();
   const hint = document.getElementById('search-hint');
-  const items = document.querySelectorAll('[data-search]');
   const panels = document.querySelectorAll('.panel');
   const tabs = document.querySelectorAll('nav.tabs button');
 
   if (q === '') {
     hint.style.display = 'none';
-    items.forEach(el => el.style.display = '');
+    document.querySelectorAll('[data-search]').forEach(el => el.style.display = '');
     tabs.forEach(t => t.disabled = false);
     panels.forEach(p => p.classList.remove('active'));
     const attivaPrima = document.querySelector('nav.tabs button.active') || document.querySelector('nav.tabs button');
@@ -1060,18 +1059,24 @@ window.cerca = function(testo) {
     return;
   }
 
-  panels.forEach(p => p.classList.add('active'));
   tabs.forEach(t => { t.classList.remove('active'); t.disabled = true; });
 
-  let trovati = 0;
-  items.forEach(el => {
-    const match = (el.getAttribute('data-search') || '').includes(q);
-    el.style.display = match ? '' : 'none';
-    if (match) trovati++;
+  let trovatiTotali = 0;
+  panels.forEach(panel => {
+    const items = panel.querySelectorAll('[data-search]');
+    let trovatiInPanel = 0;
+    items.forEach(el => {
+      const match = (el.getAttribute('data-search') || '').includes(q);
+      el.style.display = match ? '' : 'none';
+      if (match) trovatiInPanel++;
+    });
+    trovatiTotali += trovatiInPanel;
+    if (trovatiInPanel > 0) panel.classList.add('active');
+    else panel.classList.remove('active');
   });
 
   hint.style.display = 'block';
-  hint.textContent = trovati === 0 ? `Nessun risultato per "${testo}"` : `${trovati} risultat${trovati === 1 ? 'o' : 'i'} per "${testo}" in tutte le sezioni`;
+  hint.textContent = trovatiTotali === 0 ? `Nessun risultato per "${testo}"` : `${trovatiTotali} risultat${trovatiTotali === 1 ? 'o' : 'i'} per "${testo}" in tutte le sezioni`;
 };
 </script>
 
