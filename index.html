@@ -115,9 +115,10 @@
   header.appbar span { font-size: 0.8rem; color: var(--ink-soft); }
 
   .search-row { padding: 14px 28px; border-bottom: 1px solid var(--border); background: var(--paper); }
+  .search-input-wrap { position: relative; }
   .search-row input {
     width: 100%;
-    padding: 9px 14px;
+    padding: 9px 34px 9px 14px;
     border: 1px solid var(--border);
     border-radius: 3px;
     background: var(--surface);
@@ -126,6 +127,20 @@
     color: var(--ink);
   }
   .search-row input:focus { outline: 2px solid var(--forest); outline-offset: 1px; }
+  .btn-clear-ricerca {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+    cursor: pointer;
+    padding: 4px 6px;
+    line-height: 1;
+  }
+  .btn-clear-ricerca:hover { color: var(--brick); }
   .search-hint { font-size: 0.72rem; color: var(--ink-soft); margin-top: 6px; }
   .azioni-export { display: flex; gap: 8px; margin-top: 8px; }
   .btn-export {
@@ -439,7 +454,10 @@
     </header>
 
     <div class="search-row">
-      <input type="text" id="ricerca" placeholder="Cerca in to do, scadenze, diario, note, appunti, link…" oninput="cerca(this.value)">
+      <div class="search-input-wrap">
+        <input type="text" id="ricerca" placeholder="Cerca in to do, scadenze, diario, note, appunti, link…" oninput="cerca(this.value)">
+        <button class="btn-clear-ricerca" onclick="pulisciRicerca()" title="Cancella ricerca">✕</button>
+      </div>
       <div class="search-hint" id="search-hint" style="display:none;"></div>
       <div class="azioni-export">
         <button class="btn-export" onclick="stampaVista()">🖨 Stampa</button>
@@ -1039,6 +1057,13 @@ window.mostra = function(id, btn) {
   document.querySelectorAll('nav.tabs button').forEach(b => b.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   btn.classList.add('active');
+};
+
+window.pulisciRicerca = function() {
+  const campo = document.getElementById('ricerca');
+  campo.value = '';
+  cerca('');
+  campo.focus();
 };
 
 window.cerca = function(testo) {
