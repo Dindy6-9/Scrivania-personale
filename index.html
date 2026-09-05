@@ -248,6 +248,38 @@
     background: var(--surface);
   }
   .scadenza .checkbox.checked { background: var(--forest); border-color: var(--forest); }
+  .scadenza .data-cliccabile { cursor: pointer; }
+  .scadenza .data-cliccabile:hover { opacity: 0.7; }
+  .data-input-inline {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.74rem;
+    width: 92px;
+    padding: 3px 2px;
+    border: 1.5px solid var(--forest-dark);
+    border-radius: 2px;
+    background: var(--paper);
+    color: var(--ink);
+  }
+  .scadenza .elimina {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    flex-shrink: 0;
+    padding: 0 2px;
+  }
+  .scadenza .elimina:hover { color: var(--brick); }
+  .appunto .elimina {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    float: right;
+    padding: 0 2px;
+  }
+  .appunto .elimina:hover { color: var(--brick); }
   .scadenza.settimana-corrente .data { color: var(--rosso-settimana); border-color: var(--rosso-settimana); }
   .badge-urgente { font-size: 0.66rem; color: var(--ink-soft); font-weight: 500; margin-left: 4px; }
   .badge-categoria {
@@ -780,6 +812,22 @@ window.aggiungiScadenza = async function() {
   document.getElementById('anticipo-valore').textContent = '1';
 };
 window.toggleScadenza = async function(id, fattoAttuale) { await updateDoc(doc(db, 'scadenze', id), { fatto: !fattoAttuale }); };
+window.eliminaScadenza = async function(id) {
+  if (!confirm('Eliminare definitivamente questa scadenza?')) return;
+  await deleteDoc(doc(db, 'scadenze', id));
+};
+window.cambiaDataScadenza = function(id, dataAttuale, dataEl) {
+  const input = document.createElement('input');
+  input.type = 'date';
+  input.value = dataAttuale;
+  input.className = 'data-input-inline';
+  input.onchange = async () => {
+    await updateDoc(doc(db, 'scadenze', id), { data: input.value });
+  };
+  input.onblur = () => { if (input.parentNode) input.parentNode.replaceChild(dataEl, input); };
+  dataEl.parentNode.replaceChild(input, dataEl);
+  input.focus();
+};
 
 window.filtraCategoria = function(cat, tipo) {
   if (tipo === 'scadenze') { filtroAttivoScadenze = cat; renderFiltriScadenze(ultimiDocsScadenze); applicaFiltroScadenze(); }
@@ -861,14 +909,17 @@ function renderScadenze(snap) {
     el.setAttribute('data-categoria', s.categoria || 'Altro');
     el.innerHTML = `
       <div class="checkbox ${s.fatto ? 'checked' : ''}" onclick="toggleScadenza('${s.id}', ${s.fatto})">${s.fatto ? '✓' : ''}</div>
-      <div class="data">${breve.giorno} ${breve.mese}<small>${breve.sett}</small></div>
+      <div class="data data-cliccabile" title="Clicca per cambiare la data">${breve.giorno} ${breve.mese}<small>${breve.sett}</small></div>
       <div class="contenuto">
         <div class="titolo"><span class="titolo-testo">${escapeHtml(s.testo)}</span> <span class="badge-urgente">(${cr.testo})</span></div>
         ${s.allarme ? '<div class="meta">🔔 allarme attivo</div>' : ''}
       </div>
       <span class="badge-categoria">${escapeHtml(s.categoria || 'Altro')}</span>
+      <button class="elimina" onclick="eliminaScadenza('${s.id}')" title="Elimina definitivamente">🗑</button>
     `;
     abilitaModifica(el.querySelector('.titolo-testo'), 'scadenze', s.id, 'testo');
+    const dataEl = el.querySelector('.data-cliccabile');
+    dataEl.onclick = () => cambiaDataScadenza(s.id, s.data, dataEl);
     (s.fatto ? completate : attive).appendChild(el);
   });
   applicaFiltroScadenze();
@@ -956,6 +1007,10 @@ window.aggiungiAppunto = async function() {
   input.value = '';
   await addDoc(collection(db, 'appunti'), { testo, creato: serverTimestamp() });
 };
+window.eliminaAppunto = async function(id) {
+  if (!confirm('Eliminare definitivamente questo appunto?')) return;
+  await deleteDoc(doc(db, 'appunti', id));
+};
 
 function renderAppunti(snap) {
   const cont = document.getElementById('appunti-lista');
@@ -972,7 +1027,7 @@ function renderAppunti(snap) {
     const el = document.createElement('div');
     el.className = 'appunto';
     el.setAttribute('data-search', a.testo.toLowerCase());
-    el.innerHTML = `<div class="appunto-data">${dataStr}</div><p class="testo-appunto">${escapeHtml(a.testo)}</p>`;
+    el.innerHTML = `<div class="appunto-data">${dataStr}<button class="elimina" onclick="eliminaAppunto('${a.id}')" title="Elimina">🗑</button></div><p class="testo-appunto">${escapeHtml(a.testo)}</p>`;
     abilitaModifica(el.querySelector('.testo-appunto'), 'appunti', a.id, 'testo');
     cont.appendChild(el);
   });
