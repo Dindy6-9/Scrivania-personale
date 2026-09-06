@@ -217,17 +217,17 @@
   .scadenza .data {
     font-family: 'Inter', sans-serif;
     font-weight: 700;
-    font-size: 0.74rem;
+    font-size: 0.68rem;
     color: var(--forest-dark);
-    width: 66px;
+    width: 92px;
     flex-shrink: 0;
     white-space: nowrap;
     text-align: center;
     border: 1.5px solid var(--forest-dark);
     border-radius: 2px;
-    padding: 3px 0;
+    padding: 3px 2px;
   }
-  .scadenza .data small { display: inline; font-size: 0.74rem; color: var(--ink-soft); font-weight: 700; margin-left: 4px; text-transform: lowercase; }
+  .scadenza .data small { display: inline; font-size: 0.68rem; color: var(--ink-soft); font-weight: 700; margin-left: 3px; text-transform: lowercase; }
   .scadenza .contenuto { flex: 1; }
   .scadenza .contenuto .titolo { font-weight: 500; font-size: 0.85rem; margin-bottom: 1px; }
   .scadenza .contenuto .meta { font-size: 0.78rem; color: var(--ink-soft); }
@@ -311,6 +311,8 @@
     flex-shrink: 0;
     white-space: nowrap;
   }
+  .badge-cat-cliccabile { cursor: pointer; }
+  .badge-cat-cliccabile:hover { background: var(--forest); color: #fff; }
   #scadenze-attive:empty::after, #scadenze-completate:empty::after {
     content: "Nessuna scadenza qui";
     font-size: 0.82rem;
@@ -642,8 +644,8 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
 import {
-  getFirestore, collection, addDoc, updateDoc, deleteDoc, doc,
-  onSnapshot, serverTimestamp
+  getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, setDoc,
+  onSnapshot, serverTimestamp, query, where, getDocs
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 
@@ -703,7 +705,7 @@ function oggiISO() { return new Date().toISOString().split('T')[0]; }
 
 function formatDataBreve(dataISO) {
   const d = new Date(dataISO + 'T00:00:00');
-  return { giorno: String(d.getDate()).padStart(2, '0'), mese: MESI[d.getMonth()].toUpperCase(), sett: GIORNI_SETT[d.getDay()] };
+  return { giorno: String(d.getDate()).padStart(2, '0'), mese: MESI[d.getMonth()].toUpperCase(), anno: String(d.getFullYear()).slice(-2), sett: GIORNI_SETT[d.getDay()] };
 }
 
 function formatGiornoLungo(dataISO) {
@@ -795,10 +797,38 @@ function renderTodos(snap) {
 document.getElementById('scadenza-data-input').value = oggiISO();
 document.getElementById('diario-data-input').value = oggiISO();
 
-const CATEGORIE_DEFAULT_SCADENZE = ['Bandi', 'Contabili', 'Admin', 'Altro'];
-const CATEGORIE_DEFAULT_LINK = ['Generali', 'Fornitori', 'Altro'];
+let LISTA_CATEGORIE_SCADENZE = ['Bandi', 'Contabili', 'Admin', 'Altro'];
+let LISTA_CATEGORIE_LINK = ['Generali', 'Fornitori', 'Altro'];
 let filtroAttivoScadenze = null;
 let filtroAttivoLink = null;
+
+async function inizializzaListaCategorie(tipo, listaDefault) {
+  const refDoc = doc(db, 'categorie', tipo);
+  onSnapshot(refDoc, async (snap) => {
+    if (snap.exists() && Array.isArray(snap.data().lista)) {
+      if (tipo === 'scadenze') { LISTA_CATEGORIE_SCADENZE = snap.data().lista; aggiornaSelectCategoria('scadenza-categoria', LISTA_CATEGORIE_SCADENZE); renderFiltriScadenze(ultimiDocsScadenze); }
+      else { LISTA_CATEGORIE_LINK = snap.data().lista; aggiornaSelectCategoria('link-categoria', LISTA_CATEGORIE_LINK); renderFiltriLink(ultimiDocsLink); }
+    } else {
+      try { await setDoc(refDoc, { lista: listaDefault }); } catch (e) {}
+    }
+  });
+}
+function aggiornaSelectCategoria(selectId, lista) {
+  const select = document.getElementById(selectId);
+  const valorePrecedente = select.value;
+  select.innerHTML = '';
+  lista.forEach(cat => {
+    const opz = document.createElement('option');
+    opz.value = cat; opz.textContent = cat;
+    select.appendChild(opz);
+  });
+  const nuovaOpz = document.createElement('option');
+  nuovaOpz.value = '__nuova__'; nuovaOpz.textContent = '+ Nuova categoria…';
+  select.appendChild(nuovaOpz);
+  if (lista.includes(valorePrecedente)) select.value = valorePrecedente;
+}
+inizializzaListaCategorie('scadenze', LISTA_CATEGORIE_SCADENZE);
+inizializzaListaCategorie('link', LISTA_CATEGORIE_LINK);
 
 window.toggleAnticipo = function(checkbox) { document.getElementById('anticipo-wrap').style.display = checkbox.checked ? 'flex' : 'none'; };
 window.cambiaAnticipo = function(delta) {
@@ -810,18 +840,72 @@ window.cambiaAnticipo = function(delta) {
   document.getElementById('anticipo-label').textContent = val === 0 ? 'il giorno stesso' : (val === 1 ? 'giorno prima' : 'giorni prima');
 };
 
-window.gestisciNuovaCategoria = function(select, tipo) {
+window.gestisciNuovaCategoria = async function(select, tipo) {
   if (select.value === '__nuova__') {
     const nome = prompt('Nome della nuova categoria:');
     if (nome && nome.trim() !== '') {
-      const opz = document.createElement('option');
-      opz.value = nome.trim(); opz.textContent = nome.trim();
-      select.insertBefore(opz, select.querySelector('option[value="__nuova__"]'));
-      select.value = nome.trim();
-    } else {
-      select.value = 'Altro';
-    }
+      const nomeFinale = nome.trim();
+      const refDoc = doc(db, 'categorie', tipo);
+      const listaAttuale = tipo === 'scadenze' ? LISTA_CATEGORIE_SCADENZE : LISTA_CATEGORIE_LINK;
+      if (!listaAttuale.includes(nomeFinale)) {
+        const nuovaLista = [...listaAttuale.filter(c => c !== 'Altro'), nomeFinale, 'Altro'];
+        await setDoc(refDoc, { lista: nuovaLista });
+      }
+      select.value = nomeFinale;
+    } else { select.value = 'Altro'; }
   }
+};
+
+window.gestisciCategorie = async function(tipo) {
+  const lista = tipo === 'scadenze' ? LISTA_CATEGORIE_SCADENZE : LISTA_CATEGORIE_LINK;
+  const elenco = lista.map((c, i) => (i + 1) + '. ' + c).join('\n');
+  const scelta = prompt('Quale categoria vuoi modificare o eliminare?\n\n' + elenco + '\n\nScrivi il numero:');
+  if (!scelta) return;
+  const indice = parseInt(scelta, 10) - 1;
+  if (isNaN(indice) || indice < 0 || indice >= lista.length) { alert('Numero non valido.'); return; }
+  const categoriaScelta = lista[indice];
+  if (categoriaScelta === 'Altro') { alert('La categoria "Altro" non si può modificare né eliminare.'); return; }
+
+  const azione = prompt('Categoria "' + categoriaScelta + '":\n\n- Scrivi il NUOVO NOME per rinominarla\n- Scrivi ELIMINA per cancellarla (le voci che la usano passeranno ad "Altro")\n- Lascia vuoto per annullare');
+  if (!azione || azione.trim() === '') return;
+
+  const refDoc = doc(db, 'categorie', tipo);
+  const collezione = tipo === 'scadenze' ? 'scadenze' : 'link';
+
+  if (azione.trim().toUpperCase() === 'ELIMINA') {
+    if (!confirm('Confermi di voler eliminare la categoria "' + categoriaScelta + '"? Le voci che la usano passeranno ad "Altro".')) return;
+    const nuovaLista = lista.filter(c => c !== categoriaScelta);
+    await setDoc(refDoc, { lista: nuovaLista });
+    const q = query(collection(db, collezione), where('categoria', '==', categoriaScelta));
+    const risultati = await getDocs(q);
+    for (const docSnap of risultati.docs) { await updateDoc(doc(db, collezione, docSnap.id), { categoria: 'Altro' }); }
+  } else {
+    const nuovoNome = azione.trim();
+    const nuovaLista = lista.map(c => c === categoriaScelta ? nuovoNome : c);
+    await setDoc(refDoc, { lista: nuovaLista });
+    const q = query(collection(db, collezione), where('categoria', '==', categoriaScelta));
+    const risultati = await getDocs(q);
+    for (const docSnap of risultati.docs) { await updateDoc(doc(db, collezione, docSnap.id), { categoria: nuovoNome }); }
+  }
+};
+
+window.cambiaCategoriaVoce = function(id, categoriaAttuale, tipo, badgeEl) {
+  const lista = tipo === 'scadenze' ? LISTA_CATEGORIE_SCADENZE : LISTA_CATEGORIE_LINK;
+  const select = document.createElement('select');
+  select.className = 'categoria-select';
+  lista.forEach(cat => {
+    const opz = document.createElement('option');
+    opz.value = cat; opz.textContent = cat;
+    if (cat === categoriaAttuale) opz.selected = true;
+    select.appendChild(opz);
+  });
+  select.onchange = async () => {
+    const collezione = tipo === 'scadenze' ? 'scadenze' : 'link';
+    await updateDoc(doc(db, collezione, id), { categoria: select.value });
+  };
+  select.onblur = () => { if (select.parentNode) select.parentNode.replaceChild(badgeEl, select); };
+  badgeEl.parentNode.replaceChild(select, badgeEl);
+  select.focus();
 };
 
 window.aggiungiScadenza = async function() {
@@ -898,39 +982,43 @@ function applicaFiltroLink() {
 
 function renderFiltriScadenze(docs) {
   const wrap = document.getElementById('filtri-scadenze');
-  const categorieViste = new Set(CATEGORIE_DEFAULT_SCADENZE);
-  docs.forEach(d => { if (d.categoria) categorieViste.add(d.categoria); });
+  const cats = new Set(LISTA_CATEGORIE_SCADENZE);
+  docs.forEach(d => { if (d.categoria) cats.add(d.categoria); });
   wrap.innerHTML = '';
-  const tuttiBtn = document.createElement('button');
-  tuttiBtn.className = 'filtro-chip' + (!filtroAttivoScadenze ? ' attivo' : '');
-  tuttiBtn.textContent = 'Tutte';
-  tuttiBtn.onclick = () => filtraCategoria(null, 'scadenze');
-  wrap.appendChild(tuttiBtn);
-  categorieViste.forEach(cat => {
+  const t = document.createElement('button');
+  t.className = 'filtro-chip' + (!filtroAttivoScadenze ? ' attivo' : '');
+  t.textContent = 'Tutte'; t.onclick = () => filtraCategoria(null, 'scadenze');
+  wrap.appendChild(t);
+  cats.forEach(cat => {
     const b = document.createElement('button');
     b.className = 'filtro-chip' + (filtroAttivoScadenze === cat ? ' attivo' : '');
-    b.textContent = cat;
-    b.onclick = () => filtraCategoria(cat, 'scadenze');
+    b.textContent = cat; b.onclick = () => filtraCategoria(cat, 'scadenze');
     wrap.appendChild(b);
   });
+  const gear = document.createElement('button');
+  gear.className = 'filtro-chip'; gear.title = 'Modifica o elimina categorie';
+  gear.textContent = '⚙'; gear.onclick = () => gestisciCategorie('scadenze');
+  wrap.appendChild(gear);
 }
 function renderFiltriLink(docs) {
   const wrap = document.getElementById('filtri-link');
-  const categorieViste = new Set(CATEGORIE_DEFAULT_LINK);
-  docs.forEach(d => { if (d.categoria) categorieViste.add(d.categoria); });
+  const cats = new Set(LISTA_CATEGORIE_LINK);
+  docs.forEach(d => { if (d.categoria) cats.add(d.categoria); });
   wrap.innerHTML = '';
-  const tuttiBtn = document.createElement('button');
-  tuttiBtn.className = 'filtro-chip' + (!filtroAttivoLink ? ' attivo' : '');
-  tuttiBtn.textContent = 'Tutte';
-  tuttiBtn.onclick = () => filtraCategoria(null, 'link');
-  wrap.appendChild(tuttiBtn);
-  categorieViste.forEach(cat => {
+  const t = document.createElement('button');
+  t.className = 'filtro-chip' + (!filtroAttivoLink ? ' attivo' : '');
+  t.textContent = 'Tutte'; t.onclick = () => filtraCategoria(null, 'link');
+  wrap.appendChild(t);
+  cats.forEach(cat => {
     const b = document.createElement('button');
     b.className = 'filtro-chip' + (filtroAttivoLink === cat ? ' attivo' : '');
-    b.textContent = cat;
-    b.onclick = () => filtraCategoria(cat, 'link');
+    b.textContent = cat; b.onclick = () => filtraCategoria(cat, 'link');
     wrap.appendChild(b);
   });
+  const gear = document.createElement('button');
+  gear.className = 'filtro-chip'; gear.title = 'Modifica o elimina categorie';
+  gear.textContent = '⚙'; gear.onclick = () => gestisciCategorie('link');
+  wrap.appendChild(gear);
 }
 
 let ultimiDocsScadenze = [];
@@ -958,15 +1046,17 @@ function renderScadenze(snap) {
     el.setAttribute('data-categoria', s.categoria || 'Altro');
     el.innerHTML = `
       <div class="checkbox ${s.fatto ? 'checked' : ''}" onclick="toggleScadenza('${s.id}', ${s.fatto})">${s.fatto ? '✓' : ''}</div>
-      <div class="data data-cliccabile" title="Clicca per cambiare la data">${breve.giorno} ${breve.mese}<small>${breve.sett}</small></div>
+      <div class="data data-cliccabile" title="Clicca per cambiare la data">${breve.giorno} ${breve.mese} '${breve.anno}<small>${breve.sett}</small></div>
       <div class="contenuto">
         <div class="titolo"><span class="titolo-testo">${escapeHtml(s.testo)}</span> <span class="badge-urgente">(${cr.testo})</span></div>
         ${s.allarme ? '<div class="meta' + ((s.anticipo !== null && s.anticipo !== undefined && cr.diffGiorni <= s.anticipo) ? ' meta-allarme-pulsante' : '') + '" title="Clicca per cambiare quando avvisare">🔔 allarme attivo</div>' : ''}
       </div>
-      <span class="badge-categoria">${escapeHtml(s.categoria || 'Altro')}</span>
+      <span class="badge-categoria badge-cat-cliccabile" title="Clicca per cambiare categoria">${escapeHtml(s.categoria || 'Altro')}</span>
       <button class="elimina" onclick="eliminaScadenza('${s.id}')" title="Elimina definitivamente">🗑</button>
     `;
     abilitaModifica(el.querySelector('.titolo-testo'), 'scadenze', s.id, 'testo');
+    const badgeCat = el.querySelector('.badge-cat-cliccabile');
+    badgeCat.onclick = () => cambiaCategoriaVoce(s.id, s.categoria || 'Altro', 'scadenze', badgeCat);
     const dataEl = el.querySelector('.data-cliccabile');
     dataEl.onclick = () => cambiaDataScadenza(s.id, s.data, dataEl);
     const metaEl = el.querySelector('.meta');
@@ -1114,10 +1204,12 @@ function renderLink(snap) {
     el.setAttribute('data-categoria', l.categoria || 'Altro');
     el.innerHTML = `
       <div class="titolo titolo-link">${escapeHtml(l.titolo)}</div>
-      <span class="badge-categoria">${escapeHtml(l.categoria || 'Altro')}</span>
+      <span class="badge-categoria badge-cat-cliccabile" title="Clicca per cambiare categoria">${escapeHtml(l.categoria || 'Altro')}</span>
       <a href="${escapeHtml(l.url)}" target="_blank" rel="noopener">Apri ↗</a>
     `;
     abilitaModifica(el.querySelector('.titolo-link'), 'link', l.id, 'titolo');
+    const badgeCat = el.querySelector('.badge-cat-cliccabile');
+    badgeCat.onclick = () => cambiaCategoriaVoce(l.id, l.categoria || 'Altro', 'link', badgeCat);
     cont.appendChild(el);
   });
   applicaFiltroLink();
