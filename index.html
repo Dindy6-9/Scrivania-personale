@@ -282,6 +282,23 @@
   .appunto .elimina:hover { color: var(--brick); }
   .scadenza.settimana-corrente .data { color: var(--rosso-settimana); border-color: var(--rosso-settimana); }
   .badge-urgente { font-size: 0.66rem; color: var(--ink-soft); font-weight: 500; margin-left: 4px; }
+  @keyframes pulsaAllarme {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+  .meta-allarme-pulsante {
+    animation: pulsaAllarme 1.8s ease-in-out infinite;
+    color: #E63946 !important;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .anticipo-edit-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+  }
   .badge-categoria {
     display: inline-block;
     font-size: 0.68rem;
@@ -343,11 +360,20 @@
 
   .diario-entry .checkbox { flex-shrink: 0; }
 
-  nav.tabs { display: flex; flex-wrap: wrap; border-bottom: 1px solid var(--border); background: var(--paper); }
+  nav.tabs {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    border-bottom: 1px solid var(--border);
+    background: var(--paper);
+  }
+  nav.tabs::-webkit-scrollbar { display: none; }
   nav.tabs button {
-    flex: 1;
-    min-width: 80px;
-    padding: 12px 6px;
+    flex: 0 0 auto;
+    white-space: nowrap;
+    padding: 12px 14px;
     background: none;
     border: none;
     font-family: 'Inter', sans-serif;
@@ -701,7 +727,7 @@ function contoAllaRovescia(dataISO) {
   else if (diffGiorni <= 6) { testo = 'tra ' + diffGiorni + ' giorni'; urgente = true; }
   else if (diffGiorni <= 60) { testo = 'tra ' + Math.round(diffGiorni / 7) + ' settimane'; }
   else { testo = 'tra ' + Math.round(diffGiorni / 30) + ' mesi'; }
-  return { testo, urgente };
+  return { testo, urgente, diffGiorni };
 }
 
 function inSettimanaCorrente(dataISO) {
@@ -829,6 +855,29 @@ window.cambiaDataScadenza = function(id, dataAttuale, dataEl) {
   input.focus();
 };
 
+window.cambiaAnticipoScadenza = function(id, anticipoAttuale, metaEl) {
+  const wrap = document.createElement('span');
+  wrap.className = 'anticipo-edit-inline';
+  let valore = anticipoAttuale;
+  const testoUnita = (v) => v === 0 ? 'il giorno stesso' : (v === 1 ? 'giorno prima' : v + ' giorni prima');
+  wrap.innerHTML = `
+    avvisami
+    <button type="button" class="anticipo-btn">−</button>
+    <span class="anticipo-valore-inline">${testoUnita(valore)}</span>
+    <button type="button" class="anticipo-btn">+</button>
+  `;
+  const [btnMeno, btnPiu] = wrap.querySelectorAll('.anticipo-btn');
+  const valoreEl = wrap.querySelector('.anticipo-valore-inline');
+  const aggiorna = async (delta) => {
+    valore = Math.max(0, Math.min(90, valore + delta));
+    valoreEl.textContent = testoUnita(valore);
+    await updateDoc(doc(db, 'scadenze', id), { anticipo: valore });
+  };
+  btnMeno.onclick = () => aggiorna(-1);
+  btnPiu.onclick = () => aggiorna(1);
+  metaEl.parentNode.replaceChild(wrap, metaEl);
+};
+
 window.filtraCategoria = function(cat, tipo) {
   if (tipo === 'scadenze') { filtroAttivoScadenze = cat; renderFiltriScadenze(ultimiDocsScadenze); applicaFiltroScadenze(); }
   else { filtroAttivoLink = cat; renderFiltriLink(ultimiDocsLink); applicaFiltroLink(); }
@@ -912,7 +961,7 @@ function renderScadenze(snap) {
       <div class="data data-cliccabile" title="Clicca per cambiare la data">${breve.giorno} ${breve.mese}<small>${breve.sett}</small></div>
       <div class="contenuto">
         <div class="titolo"><span class="titolo-testo">${escapeHtml(s.testo)}</span> <span class="badge-urgente">(${cr.testo})</span></div>
-        ${s.allarme ? '<div class="meta">🔔 allarme attivo</div>' : ''}
+        ${s.allarme ? '<div class="meta' + ((s.anticipo !== null && s.anticipo !== undefined && cr.diffGiorni <= s.anticipo) ? ' meta-allarme-pulsante' : '') + '" title="Clicca per cambiare quando avvisare">🔔 allarme attivo</div>' : ''}
       </div>
       <span class="badge-categoria">${escapeHtml(s.categoria || 'Altro')}</span>
       <button class="elimina" onclick="eliminaScadenza('${s.id}')" title="Elimina definitivamente">🗑</button>
@@ -920,6 +969,8 @@ function renderScadenze(snap) {
     abilitaModifica(el.querySelector('.titolo-testo'), 'scadenze', s.id, 'testo');
     const dataEl = el.querySelector('.data-cliccabile');
     dataEl.onclick = () => cambiaDataScadenza(s.id, s.data, dataEl);
+    const metaEl = el.querySelector('.meta');
+    if (metaEl) metaEl.onclick = () => cambiaAnticipoScadenza(s.id, s.anticipo || 0, metaEl);
     (s.fatto ? completate : attive).appendChild(el);
   });
   applicaFiltroScadenze();
