@@ -282,6 +282,7 @@
   .appunto .elimina:hover { color: var(--brick); }
   .scadenza.settimana-corrente .data { color: var(--rosso-settimana); border-color: var(--rosso-settimana); }
   .badge-urgente { font-size: 0.66rem; color: var(--ink-soft); font-weight: 500; margin-left: 4px; }
+  .badge-ricorrenza { font-size: 0.66rem; color: var(--forest-dark); font-weight: 700; margin-left: 4px; }
   @keyframes pulsaAllarme {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.35; }
@@ -575,6 +576,11 @@
           <option value="Altro">Altro</option>
           <option value="__nuova__">+ Nuova categoria…</option>
         </select>
+        <select id="scadenza-ricorrenza" class="categoria-select">
+          <option value="">Non ricorrente</option>
+          <option value="mensile">🔁 Mensile</option>
+          <option value="annuale">🔁 Annuale</option>
+        </select>
         <label class="allarme-toggle"><input type="checkbox" id="scadenza-allarme" onchange="toggleAnticipo(this)"> 🔔 Allarme</label>
         <span class="anticipo-wrap" id="anticipo-wrap" style="display:none;">
           avvisami
@@ -845,13 +851,18 @@ window.gestisciNuovaCategoria = async function(select, tipo) {
     const nome = prompt('Nome della nuova categoria:');
     if (nome && nome.trim() !== '') {
       const nomeFinale = nome.trim();
-      const refDoc = doc(db, 'categorie', tipo);
       const listaAttuale = tipo === 'scadenze' ? LISTA_CATEGORIE_SCADENZE : LISTA_CATEGORIE_LINK;
       if (!listaAttuale.includes(nomeFinale)) {
-        const nuovaLista = [...listaAttuale.filter(c => c !== 'Altro'), nomeFinale, 'Altro'];
-        await setDoc(refDoc, { lista: nuovaLista });
+        const nuovaOpz = document.createElement('option');
+        nuovaOpz.value = nomeFinale;
+        nuovaOpz.textContent = nomeFinale;
+        const opzioneAggiungi = select.querySelector('option[value="__nuova__"]');
+        select.insertBefore(nuovaOpz, opzioneAggiungi);
       }
       select.value = nomeFinale;
+      const refDoc = doc(db, 'categorie', tipo);
+      const nuovaLista = [...listaAttuale.filter(c => c !== 'Altro' && c !== nomeFinale), nomeFinale, 'Altro'];
+      await setDoc(refDoc, { lista: nuovaLista });
     } else { select.value = 'Altro'; }
   }
 };
@@ -913,15 +924,36 @@ window.aggiungiScadenza = async function() {
   const data = document.getElementById('scadenza-data-input').value;
   if (!testo || !data) return;
   const categoria = document.getElementById('scadenza-categoria').value;
+  const ricorrenza = document.getElementById('scadenza-ricorrenza').value || null;
   const allarme = document.getElementById('scadenza-allarme').checked;
   const anticipo = allarme ? parseInt(document.getElementById('anticipo-valore').textContent, 10) : null;
-  await addDoc(collection(db, 'scadenze'), { testo, data, categoria, fatto: false, allarme, anticipo, creato: serverTimestamp() });
+  await addDoc(collection(db, 'scadenze'), { testo, data, categoria, ricorrenza, fatto: false, allarme, anticipo, creato: serverTimestamp() });
   document.getElementById('scadenza-input').value = '';
+  document.getElementById('scadenza-ricorrenza').value = '';
   document.getElementById('scadenza-allarme').checked = false;
   document.getElementById('anticipo-wrap').style.display = 'none';
   document.getElementById('anticipo-valore').textContent = '1';
 };
-window.toggleScadenza = async function(id, fattoAttuale) { await updateDoc(doc(db, 'scadenze', id), { fatto: !fattoAttuale }); };
+
+function calcolaProssimaData(dataISO, ricorrenza) {
+  const d = new Date(dataISO + 'T00:00:00');
+  if (ricorrenza === 'mensile') d.setMonth(d.getMonth() + 1);
+  else if (ricorrenza === 'annuale') d.setFullYear(d.getFullYear() + 1);
+  return d.toISOString().split('T')[0];
+}
+
+window.toggleScadenza = async function(scadenza) {
+  const nuovoFatto = !scadenza.fatto;
+  await updateDoc(doc(db, 'scadenze', scadenza.id), { fatto: nuovoFatto });
+  if (nuovoFatto && scadenza.ricorrenza) {
+    const prossimaData = calcolaProssimaData(scadenza.data, scadenza.ricorrenza);
+    await addDoc(collection(db, 'scadenze'), {
+      testo: scadenza.testo, data: prossimaData, categoria: scadenza.categoria,
+      ricorrenza: scadenza.ricorrenza, fatto: false, allarme: scadenza.allarme,
+      anticipo: scadenza.anticipo, creato: serverTimestamp()
+    });
+  }
+};
 window.eliminaScadenza = async function(id) {
   if (!confirm('Eliminare definitivamente questa scadenza?')) return;
   await deleteDoc(doc(db, 'scadenze', id));
@@ -1045,16 +1077,17 @@ function renderScadenze(snap) {
     el.setAttribute('data-search', s.testo.toLowerCase());
     el.setAttribute('data-categoria', s.categoria || 'Altro');
     el.innerHTML = `
-      <div class="checkbox ${s.fatto ? 'checked' : ''}" onclick="toggleScadenza('${s.id}', ${s.fatto})">${s.fatto ? '✓' : ''}</div>
+      <div class="checkbox ${s.fatto ? 'checked' : ''}" title="${s.ricorrenza ? 'Segna fatto → crea in automatico la prossima occorrenza' : 'Segna come fatto'}">${s.fatto ? '✓' : ''}</div>
       <div class="data data-cliccabile" title="Clicca per cambiare la data">${breve.giorno} ${breve.mese} '${breve.anno}<small>${breve.sett}</small></div>
       <div class="contenuto">
-        <div class="titolo"><span class="titolo-testo">${escapeHtml(s.testo)}</span> <span class="badge-urgente">(${cr.testo})</span></div>
+        <div class="titolo"><span class="titolo-testo">${escapeHtml(s.testo)}</span> <span class="badge-urgente">(${cr.testo})</span>${s.ricorrenza ? ' <span class="badge-ricorrenza" title="Scadenza ricorrente">🔁 ' + (s.ricorrenza === 'mensile' ? 'mensile' : 'annuale') + '</span>' : ''}</div>
         ${s.allarme ? '<div class="meta' + ((s.anticipo !== null && s.anticipo !== undefined && cr.diffGiorni <= s.anticipo) ? ' meta-allarme-pulsante' : '') + '" title="Clicca per cambiare quando avvisare">🔔 allarme attivo</div>' : ''}
       </div>
       <span class="badge-categoria badge-cat-cliccabile" title="Clicca per cambiare categoria">${escapeHtml(s.categoria || 'Altro')}</span>
       <button class="elimina" onclick="eliminaScadenza('${s.id}')" title="Elimina definitivamente">🗑</button>
     `;
     abilitaModifica(el.querySelector('.titolo-testo'), 'scadenze', s.id, 'testo');
+    el.querySelector('.checkbox').onclick = () => toggleScadenza(s);
     const badgeCat = el.querySelector('.badge-cat-cliccabile');
     badgeCat.onclick = () => cambiaCategoriaVoce(s.id, s.categoria || 'Altro', 'scadenze', badgeCat);
     const dataEl = el.querySelector('.data-cliccabile');
