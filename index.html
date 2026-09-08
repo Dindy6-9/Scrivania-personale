@@ -1166,6 +1166,23 @@ window.eliminaDiario = async function(id) {
   await deleteDoc(doc(db, 'diario', id));
 };
 
+window.aggiungiOrarioGiorno = function(data, badgeEl) {
+  const wrap = document.createElement('span');
+  wrap.className = 'orario-edit-inline';
+  wrap.innerHTML = `<input type="time" class="orario-input"> – <input type="time" class="orario-input">`;
+  const [inputEnt, inputUsc] = wrap.querySelectorAll('input');
+  let salvato = false;
+  const salva = async () => {
+    if (salvato || (!inputEnt.value && !inputUsc.value)) return;
+    salvato = true;
+    await addDoc(collection(db, 'diario'), { testo: '', data, entrata: inputEnt.value || null, uscita: inputUsc.value || null, creato: serverTimestamp() });
+  };
+  inputEnt.onchange = salva;
+  inputUsc.onchange = salva;
+  badgeEl.parentNode.replaceChild(wrap, badgeEl);
+  wrap.querySelector('input').focus();
+};
+
 window.cambiaOrarioDiario = function(id, entrataAttuale, uscitaAttuale, badgeEl) {
   const wrap = document.createElement('span');
   wrap.className = 'orario-edit-inline';
@@ -1197,43 +1214,49 @@ function renderDiario(snap) {
     const giornoDiv = document.createElement('div');
     giornoDiv.className = 'diario-day';
 
+    const voci = gruppi[data];
+    const voceOrario = voci.find(v => v.entrata || v.uscita) || null;
+
     const headerRow = document.createElement('div');
     headerRow.className = 'giorno-header-row';
-    if (voceOrario.testo) headerRow.setAttribute('data-search', voceOrario.testo.toLowerCase());
+    if (voceOrario && voceOrario.testo) headerRow.setAttribute('data-search', voceOrario.testo.toLowerCase());
     const titolo = document.createElement('span');
     titolo.className = 'giorno';
     titolo.textContent = formatGiornoLungo(data);
     headerRow.appendChild(titolo);
 
-    const voci = gruppi[data];
-    const voceOrario = voci.find(v => v.entrata || v.uscita) || voci[0];
-    const orarioTxt = (voceOrario.entrata || voceOrario.uscita) ? '🕒 ' + (voceOrario.entrata || '…') + '–' + (voceOrario.uscita || '…') : '🕒 + orario';
+    const orarioTxt = voceOrario ? '🕒 ' + (voceOrario.entrata || '…') + '–' + (voceOrario.uscita || '…') : '🕒 + orario';
     const badgeOrario = document.createElement('span');
     badgeOrario.className = 'diario-orario-badge orario-cliccabile';
-    badgeOrario.title = "Clicca per modificare l'orario di questo giorno";
+    badgeOrario.title = voceOrario ? "Clicca per modificare l'orario di questo giorno" : "Clicca per aggiungere un orario a questo giorno";
     badgeOrario.textContent = orarioTxt;
-    badgeOrario.onclick = () => cambiaOrarioDiario(voceOrario.id, voceOrario.entrata, voceOrario.uscita, badgeOrario);
+    badgeOrario.onclick = () => {
+      if (voceOrario) cambiaOrarioDiario(voceOrario.id, voceOrario.entrata, voceOrario.uscita, badgeOrario);
+      else aggiungiOrarioGiorno(data, badgeOrario);
+    };
     headerRow.appendChild(badgeOrario);
 
-    // La nota abbinata all'orario resta sulla stessa riga dell'intestazione, modificabile sul posto
-    const notaOrario = document.createElement('span');
-    notaOrario.className = 'testo-diario nota-orario-inline';
-    notaOrario.textContent = voceOrario.testo || '';
-    abilitaModifica(notaOrario, 'diario', voceOrario.id, 'testo');
-    headerRow.appendChild(notaOrario);
-    if (voceOrario.testo) {
-      const btnEliminaOrario = document.createElement('button');
-      btnEliminaOrario.className = 'elimina';
-      btnEliminaOrario.title = 'Elimina';
-      btnEliminaOrario.textContent = '🗑';
-      btnEliminaOrario.onclick = () => eliminaDiario(voceOrario.id);
-      headerRow.appendChild(btnEliminaOrario);
+    // La nota abbinata resta sulla stessa riga SOLO se quella voce porta davvero un orario
+    if (voceOrario) {
+      const notaOrario = document.createElement('span');
+      notaOrario.className = 'testo-diario nota-orario-inline';
+      notaOrario.textContent = voceOrario.testo || '';
+      abilitaModifica(notaOrario, 'diario', voceOrario.id, 'testo');
+      headerRow.appendChild(notaOrario);
+      if (voceOrario.testo) {
+        const btnEliminaOrario = document.createElement('button');
+        btnEliminaOrario.className = 'elimina';
+        btnEliminaOrario.title = 'Elimina';
+        btnEliminaOrario.textContent = '🗑';
+        btnEliminaOrario.onclick = () => eliminaDiario(voceOrario.id);
+        headerRow.appendChild(btnEliminaOrario);
+      }
     }
 
     giornoDiv.appendChild(headerRow);
 
     voci.forEach(v => {
-      if (v.id === voceOrario.id) return; // già mostrata nella riga d'intestazione
+      if (voceOrario && v.id === voceOrario.id) return; // già mostrata nella riga d'intestazione
       if (!v.testo) return;
       const el = document.createElement('div');
       el.className = 'diario-entry';
