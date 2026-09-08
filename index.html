@@ -457,6 +457,38 @@
     color: var(--ink);
   }
   .diario-data-input { flex: 0 0 140px !important; }
+  .orario-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  .orario-input {
+    padding: 7px 6px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--paper);
+    font-family: inherit;
+    font-size: 0.82rem;
+    color: var(--ink);
+    width: 90px;
+  }
+  .diario-orario-badge {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--forest-dark);
+    background: var(--paper);
+    border: 1px solid var(--forest);
+    padding: 0px 6px;
+    border-radius: 3px;
+    margin-right: 6px;
+    flex-shrink: 0;
+  }
   .nota-tag-field { flex: 0 0 220px !important; }
   @media (max-width: 600px) { .nota-tag-field, .scadenza-add-row input[type="text"] { flex-basis: 100% !important; } }
   .allarme-toggle {
@@ -598,6 +630,8 @@
       <div id="diario-lista"></div>
       <div class="add-row diario-add-row">
         <input type="date" id="diario-data-input" class="diario-data-input">
+        <label class="orario-label">Entrata <input type="time" id="diario-entrata-input" class="orario-input"></label>
+        <label class="orario-label">Uscita <input type="time" id="diario-uscita-input" class="orario-input"></label>
         <input type="text" id="diario-input" placeholder="Cosa hai fatto?" style="flex:1;" onkeydown="if(event.key==='Enter') aggiungiDiario()">
         <button onclick="aggiungiDiario()">Aggiungi</button>
       </div>
@@ -1106,8 +1140,12 @@ window.aggiungiDiario = async function() {
   const testo = document.getElementById('diario-input').value.trim();
   const data = document.getElementById('diario-data-input').value;
   if (!testo || !data) return;
+  const entrata = document.getElementById('diario-entrata-input').value || null;
+  const uscita = document.getElementById('diario-uscita-input').value || null;
   document.getElementById('diario-input').value = '';
-  await addDoc(collection(db, 'diario'), { testo, data, creato: serverTimestamp() });
+  document.getElementById('diario-entrata-input').value = '';
+  document.getElementById('diario-uscita-input').value = '';
+  await addDoc(collection(db, 'diario'), { testo, data, entrata, uscita, creato: serverTimestamp() });
 };
 
 function renderDiario(snap) {
@@ -1130,7 +1168,8 @@ function renderDiario(snap) {
       const el = document.createElement('div');
       el.className = 'diario-entry';
       el.setAttribute('data-search', v.testo.toLowerCase());
-      el.innerHTML = `<span class="testo-diario">${escapeHtml(v.testo)}</span>`;
+      const orarioTxt = (v.entrata || v.uscita) ? '🕒 ' + (v.entrata || '…') + '–' + (v.uscita || '…') : '';
+      el.innerHTML = `${orarioTxt ? '<span class="diario-orario-badge">' + orarioTxt + '</span>' : ''}<span class="testo-diario">${escapeHtml(v.testo)}</span>`;
       abilitaModifica(el.querySelector('.testo-diario'), 'diario', v.id, 'testo');
       giornoDiv.appendChild(el);
     });
