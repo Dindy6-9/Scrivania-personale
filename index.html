@@ -489,6 +489,16 @@
     margin-right: 6px;
     flex-shrink: 0;
   }
+  .orario-cliccabile { cursor: pointer; }
+  .orario-cliccabile:hover { background: var(--forest); color: #fff; }
+  .orario-edit-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-right: 6px;
+    flex-shrink: 0;
+  }
+  .orario-edit-inline .orario-input { width: 78px; padding: 3px 4px; font-size: 0.75rem; }
   .nota-tag-field { flex: 0 0 220px !important; }
   @media (max-width: 600px) { .nota-tag-field, .scadenza-add-row input[type="text"] { flex-basis: 100% !important; } }
   .allarme-toggle {
@@ -630,11 +640,12 @@
       <div id="diario-lista"></div>
       <div class="add-row diario-add-row">
         <input type="date" id="diario-data-input" class="diario-data-input">
-        <label class="orario-label">Entrata <input type="time" id="diario-entrata-input" class="orario-input"></label>
-        <label class="orario-label">Uscita <input type="time" id="diario-uscita-input" class="orario-input"></label>
-        <input type="text" id="diario-input" placeholder="Cosa hai fatto?" style="flex:1;" onkeydown="if(event.key==='Enter') aggiungiDiario()">
+        <label class="orario-label">ENT <input type="time" id="diario-entrata-input" class="orario-input"></label>
+        <label class="orario-label">USC <input type="time" id="diario-uscita-input" class="orario-input"></label>
+        <input type="text" id="diario-input" placeholder="Note (facoltativo)" style="flex:1;" onkeydown="if(event.key==='Enter') aggiungiDiario()">
         <button onclick="aggiungiDiario()">Aggiungi</button>
       </div>
+      <div class="search-hint" style="display:block; margin-top:6px;">Puoi salvare solo entrata/uscita senza scrivere nulla, oppure solo una nota senza orari — basta compilare almeno un campo.</div>
     </section>
 
     <section class="panel" id="note">
@@ -1139,13 +1150,36 @@ function renderScadenze(snap) {
 window.aggiungiDiario = async function() {
   const testo = document.getElementById('diario-input').value.trim();
   const data = document.getElementById('diario-data-input').value;
-  if (!testo || !data) return;
   const entrata = document.getElementById('diario-entrata-input').value || null;
   const uscita = document.getElementById('diario-uscita-input').value || null;
+  if (!data || (!testo && !entrata && !uscita)) return;
   document.getElementById('diario-input').value = '';
   document.getElementById('diario-entrata-input').value = '';
   document.getElementById('diario-uscita-input').value = '';
   await addDoc(collection(db, 'diario'), { testo, data, entrata, uscita, creato: serverTimestamp() });
+};
+
+window.eliminaDiario = async function(id) {
+  if (!confirm('Eliminare definitivamente questa voce del diario?')) return;
+  await deleteDoc(doc(db, 'diario', id));
+};
+
+window.cambiaOrarioDiario = function(id, entrataAttuale, uscitaAttuale, badgeEl) {
+  const wrap = document.createElement('span');
+  wrap.className = 'orario-edit-inline';
+  wrap.innerHTML = `
+    <input type="time" class="orario-input" value="${entrataAttuale || ''}">
+    –
+    <input type="time" class="orario-input" value="${uscitaAttuale || ''}">
+  `;
+  const [inputEnt, inputUsc] = wrap.querySelectorAll('input');
+  const salva = async () => {
+    await updateDoc(doc(db, 'diario', id), { entrata: inputEnt.value || null, uscita: inputUsc.value || null });
+  };
+  inputEnt.onchange = salva;
+  inputUsc.onchange = salva;
+  wrap.querySelector('input').focus();
+  badgeEl.parentNode.replaceChild(wrap, badgeEl);
 };
 
 function renderDiario(snap) {
@@ -1167,10 +1201,11 @@ function renderDiario(snap) {
     gruppi[data].forEach(v => {
       const el = document.createElement('div');
       el.className = 'diario-entry';
-      el.setAttribute('data-search', v.testo.toLowerCase());
-      const orarioTxt = (v.entrata || v.uscita) ? '🕒 ' + (v.entrata || '…') + '–' + (v.uscita || '…') : '';
-      el.innerHTML = `${orarioTxt ? '<span class="diario-orario-badge">' + orarioTxt + '</span>' : ''}<span class="testo-diario">${escapeHtml(v.testo)}</span>`;
+      el.setAttribute('data-search', (v.testo || '').toLowerCase());
+      const orarioTxt = (v.entrata || v.uscita) ? '🕒 ' + (v.entrata || '…') + '–' + (v.uscita || '…') : '🕒 + orario';
+      el.innerHTML = `<span class="diario-orario-badge orario-cliccabile" title="Clicca per modificare l'orario">${orarioTxt}</span><span class="testo-diario">${escapeHtml(v.testo || '')}</span><button class="elimina" onclick="eliminaDiario('${v.id}')" title="Elimina">🗑</button>`;
       abilitaModifica(el.querySelector('.testo-diario'), 'diario', v.id, 'testo');
+      el.querySelector('.orario-cliccabile').onclick = function() { cambiaOrarioDiario(v.id, v.entrata, v.uscita, this); };
       giornoDiv.appendChild(el);
     });
     cont.appendChild(giornoDiv);
