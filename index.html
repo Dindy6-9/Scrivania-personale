@@ -392,7 +392,9 @@
   section.panel.active { display: block; }
 
   .diario-day { margin-bottom: 7px; }
-  .diario-day .giorno { font-family: 'Fraunces', serif; font-weight: 600; font-size: 0.88rem; color: var(--forest-dark); margin-bottom: 3px; }
+  .diario-day .giorno { font-family: 'Fraunces', serif; font-weight: 600; font-size: 0.88rem; color: var(--forest-dark); }
+  .giorno-header-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+  .nota-orario-inline { flex: 1; min-width: 60px; }
   .diario-entry {
     display: flex;
     gap: 8px;
@@ -1194,18 +1196,50 @@ function renderDiario(snap) {
   ordineGiorni.forEach(data => {
     const giornoDiv = document.createElement('div');
     giornoDiv.className = 'diario-day';
-    const titolo = document.createElement('div');
+
+    const headerRow = document.createElement('div');
+    headerRow.className = 'giorno-header-row';
+    if (voceOrario.testo) headerRow.setAttribute('data-search', voceOrario.testo.toLowerCase());
+    const titolo = document.createElement('span');
     titolo.className = 'giorno';
     titolo.textContent = formatGiornoLungo(data);
-    giornoDiv.appendChild(titolo);
-    gruppi[data].forEach(v => {
+    headerRow.appendChild(titolo);
+
+    const voci = gruppi[data];
+    const voceOrario = voci.find(v => v.entrata || v.uscita) || voci[0];
+    const orarioTxt = (voceOrario.entrata || voceOrario.uscita) ? '🕒 ' + (voceOrario.entrata || '…') + '–' + (voceOrario.uscita || '…') : '🕒 + orario';
+    const badgeOrario = document.createElement('span');
+    badgeOrario.className = 'diario-orario-badge orario-cliccabile';
+    badgeOrario.title = "Clicca per modificare l'orario di questo giorno";
+    badgeOrario.textContent = orarioTxt;
+    badgeOrario.onclick = () => cambiaOrarioDiario(voceOrario.id, voceOrario.entrata, voceOrario.uscita, badgeOrario);
+    headerRow.appendChild(badgeOrario);
+
+    // La nota abbinata all'orario resta sulla stessa riga dell'intestazione, modificabile sul posto
+    const notaOrario = document.createElement('span');
+    notaOrario.className = 'testo-diario nota-orario-inline';
+    notaOrario.textContent = voceOrario.testo || '';
+    abilitaModifica(notaOrario, 'diario', voceOrario.id, 'testo');
+    headerRow.appendChild(notaOrario);
+    if (voceOrario.testo) {
+      const btnEliminaOrario = document.createElement('button');
+      btnEliminaOrario.className = 'elimina';
+      btnEliminaOrario.title = 'Elimina';
+      btnEliminaOrario.textContent = '🗑';
+      btnEliminaOrario.onclick = () => eliminaDiario(voceOrario.id);
+      headerRow.appendChild(btnEliminaOrario);
+    }
+
+    giornoDiv.appendChild(headerRow);
+
+    voci.forEach(v => {
+      if (v.id === voceOrario.id) return; // già mostrata nella riga d'intestazione
+      if (!v.testo) return;
       const el = document.createElement('div');
       el.className = 'diario-entry';
-      el.setAttribute('data-search', (v.testo || '').toLowerCase());
-      const orarioTxt = (v.entrata || v.uscita) ? '🕒 ' + (v.entrata || '…') + '–' + (v.uscita || '…') : '🕒 + orario';
-      el.innerHTML = `<span class="diario-orario-badge orario-cliccabile" title="Clicca per modificare l'orario">${orarioTxt}</span><span class="testo-diario">${escapeHtml(v.testo || '')}</span><button class="elimina" onclick="eliminaDiario('${v.id}')" title="Elimina">🗑</button>`;
+      el.setAttribute('data-search', v.testo.toLowerCase());
+      el.innerHTML = `<span class="testo-diario">${escapeHtml(v.testo)}</span><button class="elimina" onclick="eliminaDiario('${v.id}')" title="Elimina">🗑</button>`;
       abilitaModifica(el.querySelector('.testo-diario'), 'diario', v.id, 'testo');
-      el.querySelector('.orario-cliccabile').onclick = function() { cambiaOrarioDiario(v.id, v.entrata, v.uscita, this); };
       giornoDiv.appendChild(el);
     });
     cont.appendChild(giornoDiv);
