@@ -644,10 +644,13 @@
         <input type="date" id="diario-data-input" class="diario-data-input">
         <label class="orario-label">ENT <input type="time" id="diario-entrata-input" class="orario-input"></label>
         <label class="orario-label">USC <input type="time" id="diario-uscita-input" class="orario-input"></label>
-        <input type="text" id="diario-input" placeholder="Note (facoltativo)" style="flex:1;" onkeydown="if(event.key==='Enter') aggiungiDiario()">
-        <button onclick="aggiungiDiario()">Aggiungi</button>
+        <button onclick="aggiungiOrarioForm()">Aggiungi orario</button>
       </div>
-      <div class="search-hint" style="display:block; margin-top:6px;">Puoi salvare solo entrata/uscita senza scrivere nulla, oppure solo una nota senza orari — basta compilare almeno un campo.</div>
+      <div class="add-row diario-nota-add-row">
+        <input type="text" id="diario-nota-input" placeholder="Cosa hai fatto?" style="flex:1;" onkeydown="if(event.key==='Enter') aggiungiNotaDiario()">
+        <button onclick="aggiungiNotaDiario()">Aggiungi</button>
+      </div>
+      <div class="search-hint" style="display:block; margin-top:6px;">La nota usa la stessa data scelta sopra per l'orario — cambia quella se vuoi scrivere per un altro giorno.</div>
     </section>
 
     <section class="panel" id="note">
@@ -768,6 +771,10 @@ function formatGiornoLungo(dataISO) {
   const dCheck = new Date(d); dCheck.setHours(0,0,0,0);
   if (dCheck.getTime() === oggi.getTime()) return 'Oggi — ' + d.getDate() + ' ' + MESI_LUNGHI[d.getMonth()];
   if (dCheck.getTime() === ieri.getTime()) return 'Ieri — ' + d.getDate() + ' ' + MESI_LUNGHI[d.getMonth()];
+  return d.getDate() + ' ' + MESI_LUNGHI[d.getMonth()];
+}
+function formatGiornoSemplice(dataISO) {
+  const d = new Date(dataISO + 'T00:00:00');
   return d.getDate() + ' ' + MESI_LUNGHI[d.getMonth()];
 }
 
@@ -1149,16 +1156,22 @@ function renderScadenze(snap) {
 // ============================================================
 // DIARIO
 // ============================================================
-window.aggiungiDiario = async function() {
-  const testo = document.getElementById('diario-input').value.trim();
+window.aggiungiOrarioForm = async function() {
   const data = document.getElementById('diario-data-input').value;
   const entrata = document.getElementById('diario-entrata-input').value || null;
   const uscita = document.getElementById('diario-uscita-input').value || null;
-  if (!data || (!testo && !entrata && !uscita)) return;
-  document.getElementById('diario-input').value = '';
+  if (!data || (!entrata && !uscita)) return;
   document.getElementById('diario-entrata-input').value = '';
   document.getElementById('diario-uscita-input').value = '';
-  await addDoc(collection(db, 'diario'), { testo, data, entrata, uscita, creato: serverTimestamp() });
+  await addDoc(collection(db, 'diario'), { testo: '', data, entrata, uscita, creato: serverTimestamp() });
+};
+
+window.aggiungiNotaDiario = async function() {
+  const testo = document.getElementById('diario-nota-input').value.trim();
+  const data = document.getElementById('diario-data-input').value;
+  if (!testo || !data) return;
+  document.getElementById('diario-nota-input').value = '';
+  await addDoc(collection(db, 'diario'), { testo, data, entrata: null, uscita: null, creato: serverTimestamp() });
 };
 
 window.eliminaDiario = async function(id) {
@@ -1222,7 +1235,7 @@ function renderDiario(snap) {
     if (voceOrario && voceOrario.testo) headerRow.setAttribute('data-search', voceOrario.testo.toLowerCase());
     const titolo = document.createElement('span');
     titolo.className = 'giorno';
-    titolo.textContent = formatGiornoLungo(data);
+    titolo.textContent = formatGiornoSemplice(data);
     headerRow.appendChild(titolo);
 
     const orarioTxt = voceOrario ? '🕒 ' + (voceOrario.entrata || '…') + '–' + (voceOrario.uscita || '…') : '🕒 + orario';
