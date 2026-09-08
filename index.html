@@ -644,6 +644,7 @@
         <input type="date" id="diario-data-input" class="diario-data-input">
         <label class="orario-label">ENT <input type="time" id="diario-entrata-input" class="orario-input"></label>
         <label class="orario-label">USC <input type="time" id="diario-uscita-input" class="orario-input"></label>
+        <input type="text" id="diario-notaorario-input" placeholder="Note orario (facoltativo)…" style="flex:1;">
         <button onclick="aggiungiOrarioForm()">Aggiungi orario</button>
       </div>
       <div class="add-row diario-nota-add-row">
@@ -1160,10 +1161,12 @@ window.aggiungiOrarioForm = async function() {
   const data = document.getElementById('diario-data-input').value;
   const entrata = document.getElementById('diario-entrata-input').value || null;
   const uscita = document.getElementById('diario-uscita-input').value || null;
+  const notaOrario = document.getElementById('diario-notaorario-input').value.trim();
   if (!data || (!entrata && !uscita)) return;
   document.getElementById('diario-entrata-input').value = '';
   document.getElementById('diario-uscita-input').value = '';
-  await addDoc(collection(db, 'diario'), { testo: '', data, entrata, uscita, creato: serverTimestamp() });
+  document.getElementById('diario-notaorario-input').value = '';
+  await addDoc(collection(db, 'diario'), { testo: notaOrario, data, entrata, uscita, creato: serverTimestamp() });
 };
 
 window.aggiungiNotaDiario = async function() {
