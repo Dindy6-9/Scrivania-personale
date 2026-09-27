@@ -1,0 +1,13 @@
+{
+  "name": "Scrivania Mia",
+  "short_name": "Scrivania Mia",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#E3EAC4",
+  "theme_color": "#6E8A2C",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
