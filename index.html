@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Scrivania Mia — v2.5 — a capo, Contatti (frecce, link, riassunto), To Do completati, backup, giorni, calendario -->
+<!-- Scrivania Mia — v2.6 — a capo, Contatti (frecce, link, riassunto anche in inserimento), To Do completati, backup, giorni, calendario -->
 <html lang="it">
 <head>
 <meta charset="UTF-8">
@@ -464,6 +464,19 @@
   .mezzo-telefono { color: var(--forest-dark); }
   .mezzo-whatsapp { color: #1F8A4C; }
   .mezzo-mail { color: #3B6A94; }
+  .btn-direzione {
+    flex: 0 0 auto !important;
+    width: 42px; height: 38px; padding: 0 !important;
+    font-size: 1.35rem !important; font-weight: 800 !important; line-height: 1;
+    background: var(--paper) !important; border: 1.5px solid currentColor !important; border-radius: 3px; cursor: pointer;
+  }
+  .btn-direzione.dir-entrata { color: #2E8B3E !important; }
+  .btn-direzione.dir-uscita { color: #2F6FB0 !important; }
+  .add-row .btn-riassunto-form {
+    background: var(--paper); color: var(--forest-dark); border: 1.5px dashed var(--forest-dark);
+  }
+  .add-row .btn-riassunto-form.pieno { background: var(--paper); border-style: solid; }
+  .add-row .btn-riassunto-form:hover { background: var(--forest); color: #fff; }
   .badge-freccia { display: inline-block; font-size: 1.1rem; font-weight: 800; line-height: 1; cursor: pointer; padding: 0 2px; }
   .badge-freccia:hover { opacity: 0.6; }
   .dir-entrata { color: #2E8B3E; }
@@ -967,15 +980,13 @@
           <option value="whatsapp">💬 WhatsApp</option>
           <option value="mail">✉️ Mail</option>
         </select>
-        <select id="contatto-direzione" class="categoria-select">
-          <option value="uscita">↗ In uscita</option>
-          <option value="entrata">↙ In entrata</option>
-        </select>
+        <button type="button" id="contatto-direzione" class="btn-direzione dir-uscita" data-valore="uscita" onclick="invertiDirezioneForm()" title="In uscita — clicca per cambiare">↗</button>
         <input type="text" id="contatto-chi-input" class="contatto-chi-field" placeholder="Chi…">
         <input type="text" id="contatto-link-input" class="contatto-link-field" placeholder="📎 Link documenti (facoltativo)…">
       </div>
       <div class="add-row" style="margin-top:8px;">
         <textarea id="contatto-perche-input" class="campo-multiriga" rows="1" placeholder="Perché… (Invio = a capo)"></textarea>
+        <button type="button" id="btn-riassunto-nuovo" class="btn-riassunto-form" onclick="apriRiassuntoNuovo()" title="Scrivi un riassunto per questo contatto">📝 Riassunto</button>
         <button onclick="aggiungiContatto()">Aggiungi</button>
       </div>
     </section>
@@ -987,7 +998,7 @@
       <div id="todo-completati"></div>
     </section>
 
-    <footer class="note">Scrivania Mia · v2.5 · dati salvati su Firebase in tempo reale</footer>
+    <footer class="note">Scrivania Mia · v2.6 · dati salvati su Firebase in tempo reale</footer>
   </div>
 
   <button class="btn-calendario" id="btn-calendario" onclick="apriChiudiCalendario()" title="Calendario">📅</button>
@@ -1818,13 +1829,42 @@ window.aggiungiContatto = async function() {
   if (!chi || !data) { document.getElementById('contatto-chi-input').focus(); return; }
   const ora = document.getElementById('contatto-ora-input').value || null;
   const mezzo = document.getElementById('contatto-mezzo').value;
-  const direzione = document.getElementById('contatto-direzione').value;
+  const direzione = document.getElementById('contatto-direzione').dataset.valore === 'entrata' ? 'entrata' : 'uscita';
+  const riassunto = riassuntoNuovo;
   const link = sistemaLink(document.getElementById('contatto-link-input').value);
   document.getElementById('contatto-chi-input').value = '';
   document.getElementById('contatto-ora-input').value = '';
   document.getElementById('contatto-link-input').value = '';
   svuotaCampo('contatto-perche-input');
-  await addDoc(collection(db, 'contatti'), { chi, perche, data, ora, mezzo, direzione, link, riassunto: '', creato: serverTimestamp() });
+  riassuntoNuovo = ''; aggiornaBottoneRiassuntoNuovo();
+  await addDoc(collection(db, 'contatti'), { chi, perche, data, ora, mezzo, direzione, link, riassunto, creato: serverTimestamp() });
+};
+
+// v2.6 — freccia entrata/uscita nel modulo (senza scritta)
+window.invertiDirezioneForm = function() {
+  const btn = document.getElementById('contatto-direzione');
+  const entrata = btn.dataset.valore !== 'entrata';
+  btn.dataset.valore = entrata ? 'entrata' : 'uscita';
+  btn.textContent = entrata ? '↙' : '↗';
+  btn.className = 'btn-direzione ' + (entrata ? 'dir-entrata' : 'dir-uscita');
+  btn.title = (entrata ? 'In entrata' : 'In uscita') + ' — clicca per cambiare';
+};
+
+// v2.6 — riassunto scritto già durante l'inserimento
+let riassuntoNuovo = '';
+function aggiornaBottoneRiassuntoNuovo() {
+  const btn = document.getElementById('btn-riassunto-nuovo');
+  btn.classList.toggle('pieno', !!riassuntoNuovo);
+  btn.textContent = riassuntoNuovo ? '📝 Riassunto ✓' : '📝 Riassunto';
+}
+window.apriRiassuntoNuovo = function() {
+  riassuntoAperto = { nuovo: true, originale: riassuntoNuovo };
+  const chi = document.getElementById('contatto-chi-input').value.trim();
+  document.getElementById('riassunto-sotto').textContent = 'Nuovo contatto' + (chi ? ' con ' + chi : '') + ' — si salva insieme al contatto quando premi Aggiungi';
+  const ta = document.getElementById('riassunto-testo');
+  ta.value = riassuntoNuovo;
+  document.getElementById('modale-riassunto').classList.add('aperto');
+  ta.focus();
 };
 function sistemaLink(testo) {
   let url = (testo || '').trim();
@@ -1855,6 +1895,7 @@ window.chiudiRiassunto = async function() {
   const testo = document.getElementById('riassunto-testo').value.replace(/\s+$/, '');
   modale.classList.remove('aperto');
   const aperto = riassuntoAperto; riassuntoAperto = null;
+  if (aperto && aperto.nuovo) { riassuntoNuovo = testo; aggiornaBottoneRiassuntoNuovo(); return; }
   if (aperto && testo !== aperto.originale) {
     try { await updateDoc(doc(db, 'contatti', aperto.id), { riassunto: testo }); }
     catch (e) { console.error(e); alert('Riassunto non salvato, riprova.'); }
