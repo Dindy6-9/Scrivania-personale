@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Scrivania Mia — v2.4 — a capo, Contatti, To Do completati, backup, giorno della settimana, calendario -->
+<!-- Scrivania Mia — v2.5 — a capo, Contatti (frecce, link, riassunto), To Do completati, backup, giorni, calendario -->
 <html lang="it">
 <head>
 <meta charset="UTF-8">
@@ -233,7 +233,7 @@
     border-radius: 2px;
     padding: 3px 2px;
   }
-  .scadenza .data small { display: inline; font-size: 0.68rem; color: var(--ink-soft); font-weight: 700; margin-left: 3px; text-transform: lowercase; }
+  .scadenza .data small { display: inline; font-size: 0.68rem; color: var(--ink-soft); font-weight: 700; margin-left: 3px; }
   .scadenza .contenuto { flex: 1; }
   .scadenza .contenuto .titolo { font-weight: 500; font-size: 0.85rem; margin-bottom: 1px; }
   .scadenza .contenuto .meta { font-size: 0.78rem; color: var(--ink-soft); }
@@ -464,8 +464,50 @@
   .mezzo-telefono { color: var(--forest-dark); }
   .mezzo-whatsapp { color: #1F8A4C; }
   .mezzo-mail { color: #3B6A94; }
-  .dir-entrata { color: #2F6E3A; background: #EEF5D6; }
-  .dir-uscita { color: var(--brick); background: #F4E6D8; }
+  .badge-freccia { display: inline-block; font-size: 1.1rem; font-weight: 800; line-height: 1; cursor: pointer; padding: 0 2px; }
+  .badge-freccia:hover { opacity: 0.6; }
+  .dir-entrata { color: #2E8B3E; }
+  .dir-uscita { color: #2F6FB0; }
+  .contatto-azioni { display: inline-flex; gap: 6px; margin-left: auto; align-items: center; }
+  .contatto-mini {
+    font-size: 0.7rem; font-weight: 700; font-family: inherit;
+    border: 1px dashed var(--border); background: none; color: var(--ink-soft);
+    border-radius: 3px; padding: 1px 7px; cursor: pointer; white-space: nowrap;
+  }
+  .contatto-mini:hover { border-color: var(--forest-dark); color: var(--forest-dark); }
+  .contatto-mini.pieno { border: 1.5px solid var(--forest-dark); background: var(--paper); color: var(--forest-dark); }
+  .contatto-link {
+    font-size: 0.7rem; font-weight: 700; color: var(--forest-dark); text-decoration: none;
+    border: 1.5px solid var(--forest-dark); background: var(--paper); border-radius: 3px; padding: 1px 7px; white-space: nowrap;
+  }
+  .contatto-link:hover { background: var(--forest); color: #fff; }
+  .contatto-link-field { flex: 1 1 200px !important; }
+
+  /* v2.5 — finestra del riassunto */
+  .modale-sfondo {
+    position: fixed; inset: 0; background: rgba(23, 26, 15, 0.35);
+    display: none; align-items: center; justify-content: center; padding: 16px; z-index: 60;
+  }
+  .modale-sfondo.aperto { display: flex; }
+  .modale {
+    width: 100%; max-width: 560px; background: var(--surface);
+    border: 1.5px solid var(--forest-dark); border-radius: 6px;
+    box-shadow: 0 8px 28px rgba(23, 26, 15, 0.3); padding: 16px;
+  }
+  .modale-testata { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+  .modale-titolo { font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 600; color: var(--forest-dark); }
+  .modale-sotto { font-size: 0.78rem; color: var(--ink-soft); margin-top: 2px; }
+  .riassunto-textarea {
+    width: 100%; min-height: 220px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 4px;
+    background: var(--paper); font-family: inherit; font-size: 0.88rem; line-height: 1.45; color: var(--ink); resize: vertical;
+  }
+  .riassunto-textarea:focus { outline: 2px solid var(--forest); outline-offset: 1px; }
+  .modale-piede { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+  .btn-salva-riassunto {
+    padding: 9px 16px; background: var(--forest); color: #fff; border: none; border-radius: 3px;
+    font-size: 0.85rem; font-weight: 700; cursor: pointer; font-family: inherit;
+  }
+  .btn-salva-riassunto:hover { background: var(--forest-dark); }
   .contatto .elimina {
     background: none;
     border: none;
@@ -771,7 +813,7 @@
     body { background: #fff; padding: 0; display: block; }
     #login, #chi-sei { display: none !important; }
     #app { max-width: 100%; border: none; }
-    header.appbar, .search-row, nav.tabs, footer.note, .add-row, .btn-calendario, .calendario-pannello { display: none !important; }
+    header.appbar, .search-row, nav.tabs, footer.note, .add-row, .btn-calendario, .calendario-pannello, .modale-sfondo { display: none !important; }
     section.panel { padding: 0; }
     .checkbox { border-color: #000 !important; }
     [contenteditable]:hover, [contenteditable]:focus { background: none !important; outline: none !important; }
@@ -930,6 +972,7 @@
           <option value="entrata">↙ In entrata</option>
         </select>
         <input type="text" id="contatto-chi-input" class="contatto-chi-field" placeholder="Chi…">
+        <input type="text" id="contatto-link-input" class="contatto-link-field" placeholder="📎 Link documenti (facoltativo)…">
       </div>
       <div class="add-row" style="margin-top:8px;">
         <textarea id="contatto-perche-input" class="campo-multiriga" rows="1" placeholder="Perché… (Invio = a capo)"></textarea>
@@ -944,7 +987,7 @@
       <div id="todo-completati"></div>
     </section>
 
-    <footer class="note">Scrivania Mia · v2.4 · dati salvati su Firebase in tempo reale</footer>
+    <footer class="note">Scrivania Mia · v2.5 · dati salvati su Firebase in tempo reale</footer>
   </div>
 
   <button class="btn-calendario" id="btn-calendario" onclick="apriChiudiCalendario()" title="Calendario">📅</button>
@@ -958,6 +1001,23 @@
     </div>
     <div class="cal-griglia" id="cal-griglia"></div>
     <div class="cal-legenda"><span></span>giorni con scadenze da fare</div>
+  </div>
+
+  <div class="modale-sfondo" id="modale-riassunto" onclick="if(event.target===this) chiudiRiassunto()">
+    <div class="modale">
+      <div class="modale-testata">
+        <div>
+          <div class="modale-titolo">📝 Riassunto</div>
+          <div class="modale-sotto" id="riassunto-sotto"></div>
+        </div>
+        <button class="cal-chiudi" onclick="chiudiRiassunto()" title="Chiudi (salva)">✕</button>
+      </div>
+      <textarea id="riassunto-testo" class="riassunto-textarea" placeholder="Scrivi qui il riassunto della telefonata, del messaggio o della mail…"></textarea>
+      <div class="modale-piede">
+        <span class="search-hint">Si salva da solo quando chiudi.</span>
+        <button class="btn-salva-riassunto" onclick="chiudiRiassunto()">Salva e chiudi</button>
+      </div>
+    </div>
   </div>
 
 <script type="module">
@@ -1018,7 +1078,7 @@ document.getElementById('pin-input').addEventListener('keydown', (e) => { if (e.
 // ============================================================
 const MESI = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
 const MESI_LUNGHI = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
-const GIORNI_SETT = ['do','lu','ma','me','gi','ve','sa'];
+const GIORNI_SETT = ['DO','LU','MA','ME','GI','VE','SA'];
 
 // v2.1 — data nel fuso orario locale (prima usava l'ora di Londra: dopo mezzanotte segnava il giorno prima)
 function isoLocale(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
@@ -1759,11 +1819,48 @@ window.aggiungiContatto = async function() {
   const ora = document.getElementById('contatto-ora-input').value || null;
   const mezzo = document.getElementById('contatto-mezzo').value;
   const direzione = document.getElementById('contatto-direzione').value;
+  const link = sistemaLink(document.getElementById('contatto-link-input').value);
   document.getElementById('contatto-chi-input').value = '';
   document.getElementById('contatto-ora-input').value = '';
+  document.getElementById('contatto-link-input').value = '';
   svuotaCampo('contatto-perche-input');
-  await addDoc(collection(db, 'contatti'), { chi, perche, data, ora, mezzo, direzione, creato: serverTimestamp() });
+  await addDoc(collection(db, 'contatti'), { chi, perche, data, ora, mezzo, direzione, link, riassunto: '', creato: serverTimestamp() });
 };
+function sistemaLink(testo) {
+  let url = (testo || '').trim();
+  if (!url) return null;
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  return url;
+}
+window.cambiaLinkContatto = async function(id, linkAttuale) {
+  const nuovo = prompt('Link di condivisione dei documenti (lascia vuoto per toglierlo):', linkAttuale || '');
+  if (nuovo === null) return;
+  await updateDoc(doc(db, 'contatti', id), { link: sistemaLink(nuovo) });
+};
+
+// Finestra del riassunto: si apre al bisogno, si salva quando la chiudi
+let riassuntoAperto = null;
+window.apriRiassunto = function(c) {
+  riassuntoAperto = { id: c.id, originale: c.riassunto || '' };
+  document.getElementById('riassunto-sotto').textContent =
+    (MEZZI[c.mezzo] || '') + ' ' + (c.direzione === 'entrata' ? '↙ in entrata da ' : '↗ in uscita verso ') + (c.chi || '') + ' — ' + formatGiornoSemplice(c.data);
+  const ta = document.getElementById('riassunto-testo');
+  ta.value = c.riassunto || '';
+  document.getElementById('modale-riassunto').classList.add('aperto');
+  ta.focus();
+};
+window.chiudiRiassunto = async function() {
+  const modale = document.getElementById('modale-riassunto');
+  if (!modale.classList.contains('aperto')) return;
+  const testo = document.getElementById('riassunto-testo').value.replace(/\s+$/, '');
+  modale.classList.remove('aperto');
+  const aperto = riassuntoAperto; riassuntoAperto = null;
+  if (aperto && testo !== aperto.originale) {
+    try { await updateDoc(doc(db, 'contatti', aperto.id), { riassunto: testo }); }
+    catch (e) { console.error(e); alert('Riassunto non salvato, riprova.'); }
+  }
+};
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') chiudiRiassunto(); });
 window.eliminaContatto = async function(id) {
   if (!confirm('Eliminare definitivamente questo contatto?')) return;
   await deleteDoc(doc(db, 'contatti', id));
@@ -1811,15 +1908,19 @@ function renderContatti(snap) {
     const direzione = c.direzione === 'entrata' ? 'entrata' : 'uscita';
     const el = document.createElement('div');
     el.className = 'contatto';
-    el.setAttribute('data-search', [c.chi, c.perche, MEZZI[mezzo], DIREZIONI[direzione]].join(' ').toLowerCase());
+    el.setAttribute('data-search', [c.chi, c.perche, c.riassunto, MEZZI[mezzo], DIREZIONI[direzione]].join(' ').toLowerCase());
     el.innerHTML = `
       <div class="contatto-data" title="Clicca per cambiare la data">${breve.giorno} ${breve.mese} '${breve.anno}<small>${breve.sett}</small></div>
       <div class="contatto-corpo">
         <div class="contatto-riga1">
           <span class="badge-contatto mezzo-${mezzo}" title="Clicca per cambiare (Telefono → WhatsApp → Mail)">${MEZZI[mezzo]}</span>
-          <span class="badge-contatto dir-${direzione}" title="Clicca per invertire entrata/uscita">${DIREZIONI[direzione]}</span>
+          <span class="badge-freccia dir-${direzione}" title="${DIREZIONI[direzione].slice(2)} — clicca per invertire">${direzione === 'entrata' ? '↙' : '↗'}</span>
           <span class="contatto-ora" title="Clicca per impostare l'ora">${c.ora ? '🕒 ' + escapeHtml(c.ora) : '🕒 + ora'}</span>
           <span class="contatto-chi">${escapeHtml(c.chi || '')}</span>
+          <span class="contatto-azioni">
+            ${c.link ? '<a class="contatto-link" href="' + escapeHtml(c.link) + '" target="_blank" rel="noopener" title="Apri i documenti">📎 Documenti ↗</a><button class="contatto-mini btn-link" title="Modifica o togli il link">✎</button>' : '<button class="contatto-mini btn-link" title="Aggiungi un link di condivisione">📎 + link</button>'}
+            <button class="contatto-mini btn-riassunto${c.riassunto ? ' pieno' : ''}" title="${c.riassunto ? 'Apri il riassunto' : 'Scrivi un riassunto'}">📝 ${c.riassunto ? 'Riassunto' : '+ riassunto'}</button>
+          </span>
         </div>
         <div class="contatto-perche">${c.perche ? escapeHtml(c.perche) : ''}</div>
       </div>
@@ -1829,7 +1930,10 @@ function renderContatti(snap) {
     const percheEl = el.querySelector('.contatto-perche');
     if (!c.perche) { percheEl.setAttribute('data-vuoto', '1'); percheEl.style.opacity = '0.5'; percheEl.textContent = '+ perché'; percheEl.addEventListener('focus', () => { if (percheEl.getAttribute('data-vuoto')) { percheEl.textContent = ''; percheEl.removeAttribute('data-vuoto'); percheEl.style.opacity = ''; } }); }
     abilitaModifica(percheEl, 'contatti', c.id, 'perche', true);
-    const [badgeMezzo, badgeDir] = el.querySelectorAll('.badge-contatto');
+    const badgeMezzo = el.querySelector('.badge-contatto');
+    const badgeDir = el.querySelector('.badge-freccia');
+    el.querySelector('.btn-link').onclick = () => cambiaLinkContatto(c.id, c.link);
+    el.querySelector('.btn-riassunto').onclick = () => apriRiassunto(c);
     badgeMezzo.onclick = async () => {
       const prossimo = ORDINE_MEZZI[(ORDINE_MEZZI.indexOf(mezzo) + 1) % ORDINE_MEZZI.length];
       await updateDoc(doc(db, 'contatti', c.id), { mezzo: prossimo });
@@ -1881,7 +1985,7 @@ window.scaricaVista = function() {
 // ============================================================
 // CALENDARIO A COMPARSA — v2.4
 // ============================================================
-const INTEST_CAL = ['Lu', 'Ma', 'Me', 'Gi', 'Ve', 'Sa', 'Do'];
+const INTEST_CAL = ['LU', 'MA', 'ME', 'GI', 'VE', 'SA', 'DO'];
 let meseCal = new Date(); meseCal.setDate(1); meseCal.setHours(0, 0, 0, 0);
 
 function disegnaCalendario() {
