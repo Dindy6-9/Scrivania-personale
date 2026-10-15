@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Scrivania Mia — v2.6 — a capo, Contatti (frecce, link, riassunto anche in inserimento), To Do completati, backup, giorni, calendario -->
+<!-- Scrivania Mia — v2.7 — a capo, Contatti (frecce, link, riassunto anche in inserimento), To Do completati, backup, giorni, calendario -->
 <html lang="it">
 <head>
 <meta charset="UTF-8">
@@ -481,7 +481,11 @@
   .badge-freccia:hover { opacity: 0.6; }
   .dir-entrata { color: #2E8B3E; }
   .dir-uscita { color: #2F6FB0; }
-  .contatto-azioni { display: inline-flex; gap: 6px; margin-left: auto; align-items: center; }
+  .contatto-azioni { display: inline-flex; gap: 6px; margin-left: auto; align-items: center; flex-wrap: wrap; }
+  @media (max-width: 600px) {
+    .contatto-azioni { margin-left: 0; flex-wrap: wrap; }
+    .add-row .campo-multiriga { flex-basis: 100% !important; }
+  }
   .contatto-mini {
     font-size: 0.7rem; font-weight: 700; font-family: inherit;
     border: 1px dashed var(--border); background: none; color: var(--ink-soft);
@@ -998,7 +1002,7 @@
       <div id="todo-completati"></div>
     </section>
 
-    <footer class="note">Scrivania Mia · v2.6 · dati salvati su Firebase in tempo reale</footer>
+    <footer class="note">Scrivania Mia · v2.7 · dati salvati su Firebase in tempo reale</footer>
   </div>
 
   <button class="btn-calendario" id="btn-calendario" onclick="apriChiudiCalendario()" title="Calendario">📅</button>
