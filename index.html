@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Scrivania Mia — v2.7 — a capo, Contatti (frecce, link, riassunto anche in inserimento), To Do completati, backup, giorni, calendario -->
+<!-- Scrivania Mia — v2.8 — Diario a mesi — a capo, Contatti (frecce, link, riassunto anche in inserimento), To Do completati, backup, giorni, calendario -->
 <html lang="it">
 <head>
 <meta charset="UTF-8">
@@ -574,6 +574,21 @@
   section.panel.active { display: block; }
 
   .diario-day { margin-bottom: 7px; }
+  /* v2.8 — navigatore dei mesi nel Diario */
+  .mese-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .mese-nav-freccia, .mese-nav-oggi {
+    border: 1.5px solid var(--forest-dark); background: var(--paper); color: var(--forest-dark);
+    border-radius: 3px; font-weight: 700; cursor: pointer; font-family: inherit;
+  }
+  .mese-nav-freccia { width: 30px; height: 30px; font-size: 1.1rem; line-height: 1; }
+  .mese-nav-oggi { height: 30px; padding: 0 10px; font-size: 0.75rem; }
+  .mese-nav-freccia:hover, .mese-nav-oggi:hover { background: var(--forest); color: #fff; }
+  .mese-nav-titolo {
+    font-family: 'Fraunces', serif; font-weight: 600; font-size: 1rem; color: var(--forest-dark);
+    min-width: 150px; text-align: center; text-transform: capitalize;
+  }
+  .mese-nav-conta { font-size: 0.72rem; color: var(--ink-soft); }
+  .vuoto-mese { font-size: 0.82rem; color: var(--ink-soft); font-style: italic; display: none; }
   .diario-day .giorno { font-family: 'Fraunces', serif; font-weight: 600; font-size: 0.88rem; color: var(--forest-dark); }
   .giorno-header-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
   .nota-orario-inline { flex: 1; min-width: 60px; }
@@ -922,7 +937,15 @@
 
     <section class="panel" id="diario">
       <h2 class="panel-title">Diario giornaliero</h2>
+      <div class="mese-nav" id="diario-mese-nav">
+        <button class="mese-nav-freccia" onclick="spostaMeseDiario(-1)" title="Mese precedente">‹</button>
+        <span class="mese-nav-titolo" id="diario-mese-titolo"></span>
+        <button class="mese-nav-freccia" onclick="spostaMeseDiario(1)" title="Mese successivo">›</button>
+        <button class="mese-nav-oggi" onclick="meseDiarioCorrente()">Questo mese</button>
+        <span class="mese-nav-conta" id="diario-mese-conta"></span>
+      </div>
       <div id="diario-lista"></div>
+      <div class="vuoto-mese" id="diario-vuoto-mese">Nessuna annotazione in questo mese</div>
       <div class="add-row diario-add-row">
         <input type="date" id="diario-data-input" class="diario-data-input"><span class="giorno-sett-label" id="diario-data-input-sett"></span>
         <label class="orario-label">ENT <input type="time" id="diario-entrata-input" class="orario-input"></label>
@@ -1002,7 +1025,7 @@
       <div id="todo-completati"></div>
     </section>
 
-    <footer class="note">Scrivania Mia · v2.7 · dati salvati su Firebase in tempo reale</footer>
+    <footer class="note">Scrivania Mia · v2.8 · dati salvati su Firebase in tempo reale</footer>
   </div>
 
   <button class="btn-calendario" id="btn-calendario" onclick="apriChiudiCalendario()" title="Calendario">📅</button>
@@ -1574,6 +1597,7 @@ window.aggiungiOrarioForm = async function() {
   document.getElementById('diario-entrata-input').value = '';
   document.getElementById('diario-uscita-input').value = '';
   document.getElementById('diario-notaorario-input').value = '';
+  meseDiario = data.slice(0, 7);
   await addDoc(collection(db, 'diario'), { testo: notaOrario, data, entrata, uscita, creato: serverTimestamp() });
 };
 
@@ -1582,6 +1606,7 @@ window.aggiungiNotaDiario = async function() {
   const data = document.getElementById('diario-data-input').value;
   if (!testo || !data) return;
   svuotaCampo('diario-nota-input');
+  meseDiario = data.slice(0, 7);
   await addDoc(collection(db, 'diario'), { testo, data, entrata: null, uscita: null, creato: serverTimestamp() });
 };
 
@@ -1637,6 +1662,7 @@ function renderDiario(snap) {
   ordineGiorni.forEach(data => {
     const giornoDiv = document.createElement('div');
     giornoDiv.className = 'diario-day';
+    giornoDiv.setAttribute('data-mese', (data || '').slice(0, 7));
 
     const voci = gruppi[data];
     const voceOrario = voci.find(v => v.entrata || v.uscita) || null;
@@ -1690,6 +1716,41 @@ function renderDiario(snap) {
       giornoDiv.appendChild(el);
     });
     cont.appendChild(giornoDiv);
+  });
+  applicaMeseDiario();
+}
+
+// v2.8 — il Diario mostra un mese alla volta (si scorre con ‹ ›)
+let meseDiario = oggiISO().slice(0, 7);
+function ricercaInCorso() { return document.getElementById('ricerca').value.trim() !== ''; }
+function applicaMeseDiario() {
+  const [anno, mese] = meseDiario.split('-').map(Number);
+  document.getElementById('diario-mese-titolo').textContent = MESI_LUNGHI[mese - 1] + ' ' + anno;
+  if (ricercaInCorso()) return; // durante la ricerca il Diario mostra tutti i mesi
+  let giorni = 0;
+  document.querySelectorAll('#diario-lista .diario-day').forEach(g => {
+    const visibile = g.getAttribute('data-mese') === meseDiario;
+    g.style.display = visibile ? '' : 'none';
+    if (visibile) giorni++;
+  });
+  document.getElementById('diario-mese-conta').textContent = giorni ? giorni + (giorni === 1 ? ' giorno registrato' : ' giorni registrati') : '';
+  document.getElementById('diario-vuoto-mese').style.display = giorni ? 'none' : 'block';
+  document.getElementById('diario-mese-nav').style.display = '';
+}
+window.spostaMeseDiario = function(delta) {
+  const [anno, mese] = meseDiario.split('-').map(Number);
+  const d = new Date(anno, mese - 1 + delta, 1);
+  meseDiario = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  applicaMeseDiario();
+};
+window.meseDiarioCorrente = function() { meseDiario = oggiISO().slice(0, 7); applicaMeseDiario(); };
+// In ricerca: mostra i giorni di tutti i mesi che contengono risultati
+function diarioInRicerca() {
+  document.getElementById('diario-mese-nav').style.display = 'none';
+  document.getElementById('diario-vuoto-mese').style.display = 'none';
+  document.querySelectorAll('#diario-lista .diario-day').forEach(g => {
+    const trovato = Array.from(g.querySelectorAll('[data-search]')).some(el => el.style.display !== 'none');
+    g.style.display = trovato ? '' : 'none';
   });
 }
 
@@ -2098,7 +2159,7 @@ window.faiBackup = async function() {
   const btn = document.getElementById('btn-backup');
   btn.disabled = true; btn.textContent = '💾 Attendi…';
   try {
-    const dati = { app: 'Scrivania Mia', versione: '2.3', creato: new Date().toISOString(), collezioni: {} };
+    const dati = { app: 'Scrivania Mia', versione: '2.8', creato: new Date().toISOString(), collezioni: {} };
     let totale = 0;
     for (const nome of COLLEZIONI_BACKUP) {
       const snap = await getDocs(collection(db, nome));
@@ -2199,6 +2260,7 @@ window.cerca = function(testo) {
     attivaPrima.click();
     applicaFiltroScadenze();
     applicaFiltroLink();
+    applicaMeseDiario();
     return;
   }
 
@@ -2214,6 +2276,7 @@ window.cerca = function(testo) {
       if (match) trovatiInPanel++;
     });
     trovatiTotali += trovatiInPanel;
+    if (panel.id === 'diario') diarioInRicerca();
     if (trovatiInPanel > 0) { panel.classList.add('active'); panel.style.minHeight = '0'; }
     else { panel.classList.remove('active'); panel.style.minHeight = ''; }
   });
